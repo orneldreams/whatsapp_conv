@@ -7,7 +7,7 @@ function StatCard({ icon, label, value, tone = "primary" }) {
   }[tone];
 
   return (
-    <article className="rounded-xl border border-theme-border bg-theme-surface p-4 shadow-sm">
+    <article className="rounded-xl border border-theme-border bg-theme-surface p-4 shadow-card">
       <div className="flex items-center gap-3">
         <div className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg ${toneClass}`}>
           {icon}

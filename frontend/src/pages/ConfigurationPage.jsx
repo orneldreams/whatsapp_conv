@@ -40,7 +40,7 @@ function TypeDropdown({ value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-lg border border-theme-border bg-transparent px-3 py-2 text-left text-sm text-theme-text1"
+        className="secondary-accent-control flex w-full items-center justify-between rounded-lg border border-theme-border bg-transparent px-3 py-2 text-left text-sm text-theme-text1"
       >
         <span>{typeToLabel(value)}</span>
         <span className="text-theme-text2">▾</span>
@@ -72,6 +72,8 @@ function TypeDropdown({ value, onChange }) {
 }
 
 function Toggle({ checked, onChange, label }) {
+  const { theme } = useTheme();
+
   return (
     <button
       type="button"
@@ -81,7 +83,7 @@ function Toggle({ checked, onChange, label }) {
       <span className="text-theme-text2">{label}</span>
       <span
         className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-300 ${
-          checked ? "bg-[#6C3FE8]" : "bg-[#2D2A3E]"
+          checked ? "bg-[#6C3FE8]" : theme === "dark" ? "bg-[#2D2A3E]" : "bg-[#D8D0FF]"
         }`}
       >
         <span
@@ -154,19 +156,21 @@ function OptionsEditor({ options, setOptions }) {
 }
 
 function EditLabelModal({ isOpen, title, value, onChange, onCancel, onSave, saving }) {
+  const { theme } = useTheme();
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onCancel}>
       <div
-        className="w-full max-w-md rounded-[12px] border border-[#2D2A3E] bg-[#1A1825] p-4"
+        className={`w-full max-w-md rounded-[12px] border p-4 ${theme === "dark" ? "border-[#2D2A3E] bg-[#1A1825]" : "border-[#C4B5FD] bg-white shadow-[0_2px_8px_rgba(108,63,232,0.10)]"}`}
         onClick={(event) => event.stopPropagation()}
       >
-        <h3 className="mb-3 text-base font-semibold text-[#F0EEFF]">{title}</h3>
+        <h3 className={`mb-3 text-base font-semibold ${theme === "dark" ? "text-[#F0EEFF]" : "text-[#1A1040]"}`}>{title}</h3>
         <input
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="mb-4 w-full rounded-lg border border-[#2D2A3E] bg-transparent px-3 py-2 text-sm text-[#F0EEFF]"
+          className={`mb-4 w-full rounded-lg border px-3 py-2 text-sm ${theme === "dark" ? "border-[#2D2A3E] bg-transparent text-[#F0EEFF]" : "border-[#C4B5FD] bg-[#F5F3FF] text-[#1A1040]"}`}
           autoFocus
         />
 
@@ -174,7 +178,7 @@ function EditLabelModal({ isOpen, title, value, onChange, onCancel, onSave, savi
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-[#2D2A3E] px-3 py-2 text-sm text-[#F0EEFF]"
+            className={`rounded-lg border px-3 py-2 text-sm ${theme === "dark" ? "border-[#2D2A3E] text-[#F0EEFF]" : "border-[#C4B5FD] text-[#1A1040]"}`}
           >
             Annuler
           </button>
@@ -193,6 +197,7 @@ function EditLabelModal({ isOpen, title, value, onChange, onCancel, onSave, savi
 }
 
 function SortableFieldRow({ field, onEdit, onDelete }) {
+  const { theme } = useTheme();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: field.key
   });
@@ -241,8 +246,8 @@ function SortableFieldRow({ field, onEdit, onDelete }) {
         <button
           type="button"
           onClick={() => onDelete(field)}
-          className="inline-flex items-center gap-1 rounded-[6px] border px-2 py-1 text-[12px] text-[#6B7280] bg-transparent transition-colors hover:border-[#EF4444] hover:text-[#EF4444]"
-          style={{ borderWidth: '0.5px', borderColor: '#2D2A3E' }}
+          className={`inline-flex items-center gap-1 rounded-[6px] border px-2 py-1 text-[12px] bg-transparent transition-colors hover:border-[#EF4444] hover:text-[#EF4444] ${theme === "dark" ? "text-[#9CA3AF]" : "text-[#4B5563]"}`}
+          style={{ borderWidth: '0.5px', borderColor: theme === "dark" ? '#2D2A3E' : '#C4B5FD' }}
         >
           <Trash2 size={13} />
           Supprimer
@@ -286,7 +291,12 @@ function ConfigurationPage({ onLogout }) {
   const cardStyle =
     theme === "dark"
       ? { backgroundColor: "#1A1825", borderColor: "#2D2A3E", borderWidth: "0.5px" }
-      : { backgroundColor: "#FFFFFF", borderColor: "#E5E1FF", borderWidth: "0.5px" };
+      : {
+          backgroundColor: "#FFFFFF",
+          borderColor: "#C4B5FD",
+          borderWidth: "1px",
+          boxShadow: "0 2px 8px rgba(108,63,232,0.10)"
+        };
 
   async function loadAll() {
     setLoading(true);
@@ -471,19 +481,23 @@ function ConfigurationPage({ onLogout }) {
             Champs de base
           </h3>
           <div className="grid min-h-0 flex-1 gap-2 overflow-y-auto sm:grid-cols-2">
-            {loading ? <p className="text-sm text-theme-text2">Chargement...</p> : null}
+            {loading ? <p className="text-sm text-theme-muted">Chargement...</p> : null}
 
             {baseFields.map((field) => (
               <article key={field.key} className="rounded-xl border border-theme-border bg-theme-bg p-3">
                 <p className="text-sm font-semibold text-theme-text1">{field.label}</p>
-                <p className="mb-3 text-xs text-theme-text2">{typeToLabel(field.type)}</p>
+                <p className="mb-3 text-xs text-theme-muted">{typeToLabel(field.type)}</p>
                 <button
                   type="button"
                   onClick={() => {
                     setEditingBaseField(field);
                     setEditingBaseLabel(field.label || "");
                   }}
-                  className="inline-flex items-center gap-1 rounded-[6px] border border-[#6C3FE8] px-2 py-1 text-[12px] text-[#6C3FE8] transition-colors hover:bg-[#6C3FE8] hover:text-white"
+                  className={`inline-flex items-center gap-1 rounded-[6px] border px-2 py-1 text-[12px] transition-colors ${
+                    theme === "dark"
+                      ? "border-[#6C3FE8] text-[#6C3FE8] hover:bg-[#6C3FE8] hover:text-white"
+                      : "secondary-accent-button"
+                  }`}
                   style={{ borderWidth: '0.5px' }}
                 >
                   <Pencil size={13} />
@@ -554,10 +568,10 @@ function ConfigurationPage({ onLogout }) {
             Champs personnalisés
           </h3>
 
-          {loading ? <p className="text-sm text-theme-text2">Chargement...</p> : null}
+          {loading ? <p className="text-sm text-theme-muted">Chargement...</p> : null}
 
           {!loading && customFields.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-center text-sm text-theme-text2">
+            <div className="flex h-full items-center justify-center text-center text-sm text-theme-muted">
               Aucun champ personnalisé pour le moment
             </div>
           ) : null}
@@ -601,40 +615,40 @@ function ConfigurationPage({ onLogout }) {
         {editingCustomField ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setEditingCustomField(null)}>
             <div
-              className="w-full max-w-lg rounded-[12px] border border-[#2D2A3E] bg-[#1A1825] p-4"
+              className={`w-full max-w-lg rounded-[12px] border p-4 ${theme === "dark" ? "border-[#2D2A3E] bg-[#1A1825]" : "border-[#C4B5FD] bg-white shadow-[0_2px_8px_rgba(108,63,232,0.10)]"}`}
               onClick={(event) => event.stopPropagation()}
             >
-              <h3 className="mb-3 text-base font-semibold text-[#F0EEFF]">Modifier le champ</h3>
+              <h3 className={`mb-3 text-base font-semibold ${theme === "dark" ? "text-[#F0EEFF]" : "text-[#1A1040]"}`}>Modifier le champ</h3>
 
               <div className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-sm text-slate-300">Label</label>
+                  <label className={`mb-1 block text-sm ${theme === "dark" ? "text-slate-300" : "text-[#3730A3]"}`}>Label</label>
                   <input
                     value={editingLabel}
                     onChange={(event) => setEditingLabel(event.target.value)}
-                    className="w-full rounded-lg border border-[#2D2A3E] bg-transparent px-3 py-2 text-sm text-[#F0EEFF]"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${theme === "dark" ? "border-[#2D2A3E] bg-transparent text-[#F0EEFF]" : "border-[#C4B5FD] bg-[#F5F3FF] text-[#1A1040]"}`}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-slate-300">Type</label>
+                  <label className={`mb-1 block text-sm ${theme === "dark" ? "text-slate-300" : "text-[#3730A3]"}`}>Type</label>
                   <TypeDropdown value={editingType} onChange={setEditingType} />
                 </div>
 
                 {editingType === "select" ? (
                   <div>
-                    <label className="mb-1 block text-sm text-slate-300">Options</label>
+                    <label className={`mb-1 block text-sm ${theme === "dark" ? "text-slate-300" : "text-[#3730A3]"}`}>Options</label>
                     <OptionsEditor options={editingOptions} setOptions={setEditingOptions} />
                   </div>
                 ) : null}
 
                 {editingType === "number" ? (
                   <div>
-                    <label className="mb-1 block text-sm text-slate-300">Unité (ex: années, fois/semaine)</label>
+                    <label className={`mb-1 block text-sm ${theme === "dark" ? "text-slate-300" : "text-[#3730A3]"}`}>Unité (ex: années, fois/semaine)</label>
                     <input
                       value={editingUnit}
                       onChange={(event) => setEditingUnit(event.target.value)}
-                      className="w-full rounded-lg border border-[#2D2A3E] bg-transparent px-3 py-2 text-sm text-[#F0EEFF]"
+                      className={`w-full rounded-lg border px-3 py-2 text-sm ${theme === "dark" ? "border-[#2D2A3E] bg-transparent text-[#F0EEFF]" : "border-[#C4B5FD] bg-[#F5F3FF] text-[#1A1040]"}`}
                       placeholder="Ex: années"
                     />
                   </div>
@@ -646,7 +660,7 @@ function ConfigurationPage({ onLogout }) {
               <div className="mt-4 flex justify-end gap-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-[#2D2A3E] px-3 py-2 text-sm text-[#F0EEFF]"
+                  className={`rounded-lg border px-3 py-2 text-sm ${theme === "dark" ? "border-[#2D2A3E] text-[#F0EEFF]" : "border-[#C4B5FD] text-[#1A1040]"}`}
                   onClick={() => setEditingCustomField(null)}
                 >
                   Annuler

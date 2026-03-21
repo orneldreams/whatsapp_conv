@@ -137,8 +137,23 @@ function normalizeStatus(status) {
   return status || "Onboarding";
 }
 
-function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave, saving }) {
+function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave, saving, theme }) {
   const [form, setForm] = useState(null);
+
+  const inputStyle = {
+    backgroundColor: theme === "dark" ? "#0F0E17" : "#FFFFFF",
+    border: theme === "dark" ? "1px solid #2D2A3E" : "2px solid #7C3AED",
+    color: theme === "dark" ? "#F0EEFF" : "#111827"
+  };
+
+  const labelStyle = {
+    color: theme === "dark" ? "#9CA3AF" : "#3730A3",
+    fontWeight: 600
+  };
+
+  const modalStyle = {
+    backgroundColor: theme === "dark" ? "#1A1825" : "#FFFFFF"
+  };
 
   useEffect(() => {
     if (!initialData) {
@@ -181,7 +196,8 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
               }
             }))
           }
-          className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={inputStyle}
         >
           <option value="">Selectionner...</option>
           <option value="true">Oui</option>
@@ -203,7 +219,8 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
               }
             }))
           }
-          className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={inputStyle}
         >
           <option value="">Selectionner...</option>
           {(field.options || []).map((option) => (
@@ -230,9 +247,14 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
                 }
               }))
             }
-            className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+            style={inputStyle}
           />
-          {field.unit && <p className="mt-1 text-xs text-theme-text2">{field.unit}</p>}
+          {field.unit && (
+            <p className="mt-1 text-xs" style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>
+              {field.unit}
+            </p>
+          )}
         </div>
       );
     }
@@ -252,7 +274,8 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
             }))
           }
           placeholder="+XXX..."
-          className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={inputStyle}
         />
       );
     }
@@ -272,7 +295,8 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
             }))
           }
           placeholder="https://..."
-          className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={inputStyle}
         />
       );
     }
@@ -291,7 +315,8 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
             }))
           }
           rows="4"
-          className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={inputStyle}
         />
       );
     }
@@ -309,44 +334,58 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
             }
           }))
         }
-        className={`w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8] ${field.type === "date" ? "custom-date-input" : ""}`}
+        className={`w-full rounded-lg px-3 py-2 text-sm outline-none ${field.type === "date" ? "custom-date-input" : ""}`}
+        style={inputStyle}
       />
     );
   }
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 px-4 py-6">
+    <div
+      className="absolute inset-0 z-30 flex items-center justify-center px-4 py-6"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.55)" }}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
           onSave(form);
         }}
-        className="w-full max-w-6xl overflow-hidden rounded-2xl border border-[#2D2A3E] bg-[#1A1825]"
+        className="w-full max-w-6xl overflow-hidden rounded-2xl border"
+        style={{
+          ...modalStyle,
+          borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD",
+          color: theme === "dark" ? "#F0EEFF" : "#111827"
+        }}
       >
         <div className="grid lg:grid-cols-2">
-          <div className="space-y-4 p-5 text-[#F0EEFF]">
-            <h3 className="text-lg font-semibold">Modifier le profil</h3>
+          <div
+            className="space-y-4 p-5"
+            style={{ backgroundColor: theme === "dark" ? "#1A1825" : "#FFFFFF", color: theme === "dark" ? "#F0EEFF" : "#111827" }}
+          >
+            <h3 className="text-lg font-semibold" style={{ color: theme === "dark" ? "#F0EEFF" : "#111827" }}>Modifier le profil</h3>
 
             <label className="block text-sm">
-              <span className="mb-1 block text-slate-300">Nom complet *</span>
+              <span className="mb-1 block" style={labelStyle}>Nom complet *</span>
               <input
                 value={form.name}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, name: capitalizeFirstLetter(event.target.value) }))
                 }
-                className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+                className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                style={inputStyle}
                 required
               />
             </label>
 
             <label className="block text-sm">
-              <span className="mb-1 block text-slate-300">Numéro WhatsApp *</span>
+              <span className="mb-1 block" style={labelStyle}>Numéro WhatsApp *</span>
               <input
                 value={form.phoneNumber}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, phoneNumber: event.target.value }))
                 }
-                className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+                className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                style={inputStyle}
                 placeholder="+237 6XX XXX XXX"
                 required
               />
@@ -354,100 +393,112 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
 
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm">
-                <span className="mb-1 block text-slate-300">Pays d'origine</span>
+                <span className="mb-1 block" style={labelStyle}>Pays d'origine</span>
                 <input
                   value={form.originCountry}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, originCountry: capitalizeFirstLetter(event.target.value) }))
                   }
-                  className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                  style={inputStyle}
                 />
               </label>
 
               <label className="block text-sm">
-                <span className="mb-1 block text-slate-300">Pays actuel</span>
+                <span className="mb-1 block" style={labelStyle}>Pays actuel</span>
                 <input
                   value={form.currentCountry}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, currentCountry: capitalizeFirstLetter(event.target.value) }))
                   }
-                  className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                  style={inputStyle}
                 />
               </label>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm">
-                <span className="mb-1 block text-slate-300">Date de conversion</span>
+                <span className="mb-1 block" style={labelStyle}>Date de conversion</span>
                 <input
                   type="date"
                   value={form.conversionDate}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, conversionDate: event.target.value }))
                   }
-                  className="custom-date-input w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                  style={inputStyle}
                 />
               </label>
 
               <label className="block text-sm">
-                <span className="mb-1 block text-slate-300">Début vie chrétienne</span>
+                <span className="mb-1 block" style={labelStyle}>Début vie chrétienne</span>
                 <input
                   type="date"
                   value={form.christianLifeStart}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, christianLifeStart: event.target.value }))
                   }
-                  className="custom-date-input w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                  style={inputStyle}
                 />
               </label>
             </div>
 
             <label className="block text-sm">
-              <span className="mb-1 block text-slate-300">Eglise</span>
+              <span className="mb-1 block" style={labelStyle}>Eglise</span>
               <input
                 value={form.church}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, church: capitalizeFirstLetter(event.target.value) }))
                 }
-                className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+                className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                style={inputStyle}
               />
             </label>
 
             <label className="block text-sm">
-              <span className="mb-1 block text-slate-300">Pasteur principal</span>
+              <span className="mb-1 block" style={labelStyle}>Pasteur principal</span>
               <input
                 value={form.mainPastor}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, mainPastor: capitalizeFirstLetter(event.target.value) }))
                 }
-                className="w-full rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2 text-sm text-[#F0EEFF] outline-none focus:border-[#6C3FE8]"
+                className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                style={inputStyle}
               />
             </label>
 
-            <div className="flex items-center justify-between rounded-lg border border-[#2D2A3E] bg-[#0F0E17] px-3 py-2">
-              <span className="text-sm text-slate-300">Faiseur de disciple</span>
+            <div
+              className="flex items-center justify-between rounded-lg px-3 py-2"
+              style={{
+                border: theme === "dark" ? "1px solid #2D2A3E" : "1px solid #C4B5FD",
+                backgroundColor: theme === "dark" ? "#0F0E17" : "#F5F3FF"
+              }}
+            >
+              <span className="text-sm" style={labelStyle}>Faiseur de disciple</span>
               <button
                 type="button"
                 onClick={() => setForm((prev) => ({ ...prev, discipleMaker: !prev.discipleMaker }))}
-                className={`relative h-7 w-14 rounded-full transition-colors ${
-                  form.discipleMaker ? "bg-[#6C3FE8]" : "bg-[#2D2A3E]"
-                }`}
+                className="relative h-7 w-14 rounded-full transition-colors"
+                style={{ backgroundColor: form.discipleMaker ? "#6C3FE8" : theme === "dark" ? "#2D2A3E" : "#D8D0FF" }}
               >
                 <span
-                  className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${
+                  className={`absolute top-1 h-5 w-5 rounded-full transition-all ${
                     form.discipleMaker ? "left-8" : "left-1"
                   }`}
+                  style={{ backgroundColor: "#FFFFFF" }}
                 />
               </button>
             </div>
 
             {dynamicFields.length > 0 ? (
               <div>
-                <p className="mb-2 text-xs uppercase tracking-wide text-slate-300">Champs dynamiques</p>
+                <p className="mb-2 text-xs uppercase tracking-wide" style={labelStyle}>Champs dynamiques</p>
                 <div className="grid gap-3 md:grid-cols-2">
                   {dynamicFields.map((field) => (
                     <label key={field.key} className="block text-sm">
-                      <span className="mb-1 block text-slate-300">{field.label}</span>
+                      <span className="mb-1 block" style={labelStyle}>{field.label}</span>
                       {renderDynamicInput(field)}
                     </label>
                   ))}
@@ -456,12 +507,19 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
             ) : null}
           </div>
 
-          <div className="border-l border-[#2D2A3E] bg-[#0F0E17] p-5 text-[#F0EEFF]">
-            <h4 className="mb-4 text-base font-semibold">Aperçu profil</h4>
+          <div
+            className="border-l p-5"
+            style={{
+              borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD",
+              backgroundColor: theme === "dark" ? "#0F0E17" : "#F5F3FF",
+              color: theme === "dark" ? "#F0EEFF" : "#111827"
+            }}
+          >
+            <h4 className="mb-4 text-base font-semibold" style={{ color: theme === "dark" ? "#F0EEFF" : "#111827" }}>Aperçu profil</h4>
 
             <div className="mb-5 flex items-center gap-3">
               <div
-                className={`flex h-14 w-14 items-center justify-center rounded-full text-lg font-semibold`}
+                className="flex h-14 w-14 items-center justify-center rounded-full text-lg font-semibold"
                 style={{
                   backgroundColor: form.name.trim() ? getAvatarColor(form.name).bg : "#334155",
                   color: form.name.trim() ? getAvatarColor(form.name).text : "#e2e8f0"
@@ -473,59 +531,72 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
                 {form.name.trim() ? (
                   <p className="text-base font-semibold">{form.name}</p>
                 ) : (
-                  <p className="text-base italic text-slate-400">Nom complet</p>
+                  <p className="text-base italic" style={{ color: theme === "dark" ? "#94A3B8" : "#4B5563" }}>Nom complet</p>
                 )}
-                <p className="text-sm text-[#6C3FE8]">{form.phoneNumber || ""}</p>
+                <p className="text-sm" style={{ color: "#6C3FE8" }}>{form.phoneNumber || ""}</p>
               </div>
             </div>
 
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between gap-3 border-b border-[#2D2A3E] pb-2">
-                <span className="text-slate-300">Pays d'origine</span>
+              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+                <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays d'origine</span>
                 {displayReadValue(form.originCountry)}
               </div>
-              <div className="flex justify-between gap-3 border-b border-[#2D2A3E] pb-2">
-                <span className="text-slate-300">Pays actuel</span>
+              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+                <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays actuel</span>
                 {displayReadValue(form.currentCountry)}
               </div>
-              <div className="flex justify-between gap-3 border-b border-[#2D2A3E] pb-2">
-                <span className="text-slate-300">Date conversion</span>
+              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+                <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Date conversion</span>
                 {displayReadValue(formatDateFr(form.conversionDate))}
               </div>
-              <div className="flex justify-between gap-3 border-b border-[#2D2A3E] pb-2">
-                <span className="text-slate-300">Début vie chrétienne</span>
+              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+                <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Début vie chrétienne</span>
                 {displayReadValue(formatDateFr(form.christianLifeStart))}
               </div>
-              <div className="flex justify-between gap-3 border-b border-[#2D2A3E] pb-2">
-                <span className="text-slate-300">Eglise</span>
+              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+                <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Eglise</span>
                 {displayReadValue(form.church)}
               </div>
-              <div className="flex justify-between gap-3 border-b border-[#2D2A3E] pb-2">
-                <span className="text-slate-300">Pasteur principal</span>
+              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+                <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pasteur principal</span>
                 {displayReadValue(form.mainPastor)}
               </div>
               <div className="flex justify-between gap-3">
-                <span className="text-slate-300">Faiseur de disciple</span>
+                <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Faiseur de disciple</span>
                 <span>{form.discipleMaker ? "Oui" : "Non"}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[#2D2A3E] bg-[#1A1825] px-5 py-4">
+        <div
+          className="flex justify-end gap-2 border-t px-5 py-4"
+          style={{
+            borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD",
+            backgroundColor: theme === "dark" ? "#1A1825" : "#FFFFFF"
+          }}
+        >
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-[#2D2A3E] px-4 py-2 text-sm font-medium text-slate-200"
+            className="rounded-lg border px-4 py-2 text-sm font-medium"
+            style={{
+              backgroundColor: theme === "dark" ? "transparent" : "#F5F3FF",
+              border: theme === "dark" ? "1px solid #2D2A3E" : "2px solid #A78BFA",
+              color: theme === "dark" ? "#E2E8F0" : "#4C1D95"
+            }}
           >
             Annuler
           </button>
           <button
             type="submit"
             disabled={!canSave || saving}
-            className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${
-              !canSave || saving ? "bg-[#2D2A3E]" : "bg-[#6C3FE8]"
-            }`}
+            className="rounded-lg px-4 py-2 text-sm font-medium"
+            style={{
+              backgroundColor: !canSave || saving ? (theme === "dark" ? "#9CA3AF" : "#C4B5FD") : "#6C3FE8",
+              color: "#FFFFFF"
+            }}
           >
             {saving ? "Sauvegarde..." : "Sauvegarder"}
           </button>
@@ -708,13 +779,16 @@ function DiscipleProfilePage({ onLogout }) {
       <div className="mb-4">
         <Link
           to="/disciples"
-          className="group inline-flex cursor-pointer items-center gap-1.5 rounded-[20px] border border-[#6C3FE8]/60 bg-[#1A1825] px-[14px] py-[6px] text-[13px] font-medium text-[#6C3FE8] transition-colors hover:border-[#6C3FE8]"
+          className="group inline-flex cursor-pointer items-center gap-1.5 rounded-[20px] border border-[#6C3FE8]/60 px-[14px] py-[6px] text-[13px] font-medium text-[#6C3FE8] transition-colors hover:border-[#6C3FE8]"
+          style={{
+            backgroundColor: theme === "dark" ? "#1A1825" : "#f3f0ff"
+          }}
         >
           <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-[3px]" /> Retour à la liste
         </Link>
       </div>
 
-      {loading ? <p className="text-theme-text2">Chargement...</p> : null}
+      {loading ? <p className="text-theme-muted">Chargement...</p> : null}
       {error ? <p className="text-red-500">{error}</p> : null}
 
       {!loading && disciple ? (
@@ -739,7 +813,7 @@ function DiscipleProfilePage({ onLogout }) {
                 {normalizeStatus(disciple.status)}
               </span>
 
-              <p className="mt-3 text-[11px] text-theme-text2">
+              <p className="mt-3 text-[11px] text-theme-muted">
                 Membre depuis {formatDateFr(disciple.createdAt) || "-"}
               </p>
             </section>
@@ -786,7 +860,7 @@ function DiscipleProfilePage({ onLogout }) {
                       🔥 <span className="font-bold">{streak}</span> jours de suite
                     </p>
                   ) : (
-                    <p className="text-[12px] italic text-theme-text2">Pas encore de streak</p>
+                    <p className="text-[12px] italic text-theme-muted">Pas encore de streak</p>
                   )}
                 </div>
               </div>
@@ -803,7 +877,7 @@ function DiscipleProfilePage({ onLogout }) {
                   className="w-full resize-none rounded-lg border border-[#2D2A3E] bg-transparent px-3 py-2 text-[13px] text-theme-text1 outline-none placeholder:text-theme-text2/60 focus:border-[#6C3FE8]"
                 />
                 {noteSaving && (
-                  <p className="mt-1 text-[11px] text-theme-text2">Sauvegarde...</p>
+                  <p className="mt-1 text-[11px] text-theme-muted">Sauvegarde...</p>
                 )}
               </div>
 
@@ -819,7 +893,11 @@ function DiscipleProfilePage({ onLogout }) {
 
                 <button
                   onClick={() => setShowManualModal(true)}
-                  className="w-full rounded-lg border border-[#2D2A3E] bg-transparent px-3 py-2 text-sm text-theme-text1"
+                  className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    theme === "dark"
+                      ? "border-[#2D2A3E] bg-transparent text-theme-text1 hover:border-[#6C3FE8]"
+                      : "secondary-accent-button"
+                  }`}
                 >
                   Envoyer un check-in
                 </button>
@@ -911,7 +989,18 @@ function DiscipleProfilePage({ onLogout }) {
               </h3>
 
               <div className="mb-4 grid gap-3 md:grid-cols-3">
-                <article className="rounded-xl border border-theme-border bg-theme-bg p-3">
+                <article
+                  className="rounded-xl border border-theme-border bg-theme-bg p-3"
+                  style={
+                    theme === "light"
+                      ? {
+                          backgroundColor: "#FFFFFF",
+                          border: "1.5px solid #C4B5FD",
+                          boxShadow: "0 2px 8px rgba(108,63,232,0.10)"
+                        }
+                      : undefined
+                  }
+                >
                   <div className="mb-1 flex items-center gap-2">
                     <CalendarDays size={16} className="text-[#6C3FE8]" />
                     <p className="text-[11px] text-theme-text2">Jours de check-in</p>
@@ -919,7 +1008,18 @@ function DiscipleProfilePage({ onLogout }) {
                   <p className="text-[24px] font-semibold text-[#6C3FE8]">{progressionStats.totalCheckins}</p>
                 </article>
 
-                <article className="rounded-xl border border-theme-border bg-theme-bg p-3">
+                <article
+                  className="rounded-xl border border-theme-border bg-theme-bg p-3"
+                  style={
+                    theme === "light"
+                      ? {
+                          backgroundColor: "#FFFFFF",
+                          border: "1.5px solid #C4B5FD",
+                          boxShadow: "0 2px 8px rgba(108,63,232,0.10)"
+                        }
+                      : undefined
+                  }
+                >
                   <div className="mb-1 flex items-center gap-2">
                     <span className="text-base">🙏</span>
                     <p className="text-[11px] text-theme-text2">Taux de prière</p>
@@ -927,27 +1027,48 @@ function DiscipleProfilePage({ onLogout }) {
                   <p className="text-[24px] font-semibold" style={{ color: progressionStats.prayerRate > 70 ? '#10B981' : progressionStats.prayerRate >= 40 ? '#F59E0B' : '#EF4444' }}>{progressionStats.prayerRate}%</p>
                 </article>
 
-                <article className="rounded-xl border border-theme-border bg-theme-bg p-3">
+                <article
+                  className="rounded-xl border border-theme-border bg-theme-bg p-3"
+                  style={
+                    theme === "light"
+                      ? {
+                          backgroundColor: "#FFFFFF",
+                          border: "1.5px solid #C4B5FD",
+                          boxShadow: "0 2px 8px rgba(108,63,232,0.10)"
+                        }
+                      : undefined
+                  }
+                >
                   <div className="mb-1 flex items-center gap-2">
                     <Clock3 size={16} className="text-[#F59E0B]" />
-                    <p className="text-[11px] text-theme-text2">Derniere activite</p>
+                    <p className="text-[11px] text-theme-text2">Dernière activité</p>
                   </div>
                   <p className="text-[24px] font-semibold text-[#F59E0B]">{progressionStats.lastActivity}</p>
                 </article>
               </div>
 
-              <div className="h-36 rounded-xl border border-theme-border bg-theme-bg p-2">
+              <div
+                className="h-36 rounded-xl border border-theme-border bg-theme-bg p-2"
+                style={
+                  theme === "light"
+                    ? {
+                        backgroundColor: "#FFFFFF",
+                        border: "1.5px solid #C4B5FD"
+                      }
+                    : undefined
+                }
+              >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={progressionStats.sevenDays} barCategoryGap="25%">
-                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: theme === 'light' ? '#6B7280' : '#9CA3AF' }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: theme === 'light' ? '#4B5563' : '#9CA3AF' }} axisLine={false} tickLine={false} />
                     <YAxis hide domain={[0, 100]} />
                     <Tooltip
                       cursor={{ fill: "transparent" }}
                       contentStyle={{
-                        backgroundColor: "#1A1825",
-                        border: "1px solid #2D2A3E",
+                        backgroundColor: theme === "dark" ? "#1A1825" : "#FFFFFF",
+                        border: `1px solid ${theme === "dark" ? "#2D2A3E" : "#e5e1ff"}`,
                         borderRadius: "10px",
-                        color: "#F0EEFF"
+                        color: theme === "dark" ? "#F0EEFF" : "#1a1040"
                       }}
                       formatter={(_value, _name, item) => {
                         const status = item?.payload?.status;
@@ -986,12 +1107,12 @@ function DiscipleProfilePage({ onLogout }) {
               </h3>
 
               {latestCheckins.length === 0 ? (
-                <p className="py-8 text-center text-sm text-theme-text2">Aucun check-in enregistre</p>
+                <p className="py-8 text-center text-sm text-theme-muted">Aucun check-in enregistre</p>
               ) : (
                 <div className="space-y-3">
                   {latestCheckins.map((checkin) => (
                     <article key={checkin.id} className="flex gap-4 border-b border-[#2D2A3E] pb-3">
-                      <div className="min-w-[80px] text-[11px] text-theme-text2">{formatDateFr(checkin.id)}</div>
+                      <div className="min-w-[80px] text-[11px] text-theme-muted">{formatDateFr(checkin.id)}</div>
 
                       <div className="space-y-2">
                         <div>
@@ -1049,6 +1170,7 @@ function DiscipleProfilePage({ onLogout }) {
         dynamicFields={dynamicFields}
         onSave={handleSave}
         saving={saving}
+        theme={theme}
       />
 
       <SingleDiscipleCheckinModal

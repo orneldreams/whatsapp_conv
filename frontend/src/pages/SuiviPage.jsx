@@ -318,7 +318,11 @@ function SuiviPage({ onLogout }) {
   const panelStyle =
     theme === "dark"
       ? { backgroundColor: "#1A1825", borderColor: "#2D2A3E" }
-      : { backgroundColor: "#FFFFFF", borderColor: "#E5E1FF" };
+      : {
+          backgroundColor: "#FFFFFF",
+          borderColor: "#C4B5FD",
+          boxShadow: "0 2px 8px rgba(108,63,232,0.10)"
+        };
 
   return (
     <Layout title="Suivi" onLogout={onLogout}>
@@ -344,7 +348,7 @@ function SuiviPage({ onLogout }) {
                   <CalendarDays size={15} className="suivi-datepicker-icon" style={{ color: "#A78BFA" }} />
                   {formatDateFrCompact(date)}
                 </span>
-                <span className="text-theme-text2">▾</span>
+                <span className="text-theme-muted">▾</span>
               </button>
 
               {dateMenuOpen ? (
@@ -360,7 +364,7 @@ function SuiviPage({ onLogout }) {
                   <div className="mb-3 flex items-center justify-between">
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-theme-text2"
+                      className="secondary-accent-control inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-theme-muted"
                       style={panelStyle}
                       onClick={() =>
                         setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
@@ -371,7 +375,7 @@ function SuiviPage({ onLogout }) {
                     <p className="text-sm font-semibold text-theme-text1">{monthLabel}</p>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-theme-text2"
+                      className="secondary-accent-control inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-theme-muted"
                       style={panelStyle}
                       onClick={() =>
                         setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
@@ -385,7 +389,7 @@ function SuiviPage({ onLogout }) {
                     {["L", "M", "M", "J", "V", "S", "D"].map((dayLabel, index) => (
                       <span
                         key={`${dayLabel}-${index}`}
-                        className="py-1 text-center text-[11px] font-medium text-theme-text2"
+                        className="py-1 text-center text-[11px] font-medium text-theme-muted"
                       >
                         {dayLabel}
                       </span>
@@ -430,7 +434,7 @@ function SuiviPage({ onLogout }) {
               </p>
               <div
                 className="h-[4px] overflow-hidden rounded-[2px]"
-                style={{ backgroundColor: theme === "dark" ? "#2D2A3E" : "#E5E1FF" }}
+                style={{ backgroundColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}
               >
                 <div
                   className="suivi-progress-fill h-full rounded-[2px] bg-[#6C3FE8]"
@@ -447,10 +451,10 @@ function SuiviPage({ onLogout }) {
           <div className="grid min-h-0 flex-1 md:grid-cols-[40%_1px_60%]">
             <div className="min-h-0 overflow-hidden p-3">
               <div className="h-full overflow-y-auto rounded-lg border" style={panelStyle}>
-                {loading ? <p className="p-4 text-sm text-theme-text2">Chargement...</p> : null}
+                {loading ? <p className="p-4 text-sm text-theme-muted">Chargement...</p> : null}
 
                 {!loading && items.length === 0 ? (
-                  <p className="p-4 text-sm text-theme-text2">Aucune donnee pour cette date.</p>
+                  <p className="p-4 text-sm text-theme-muted">Aucune donnee pour cette date.</p>
                 ) : null}
 
                 {!loading ? (
@@ -480,7 +484,7 @@ function SuiviPage({ onLogout }) {
                             </div>
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold text-theme-text1">{item.name}</p>
-                              <p className="truncate text-xs text-theme-text2">{item.discipleId}</p>
+                              <p className="truncate text-xs text-theme-muted">{item.discipleId}</p>
                             </div>
                           </div>
 
@@ -516,7 +520,7 @@ function SuiviPage({ onLogout }) {
               </div>
             </div>
 
-            <div className="hidden md:block" style={{ backgroundColor: theme === "dark" ? "#2D2A3E" : "#E5E1FF" }} />
+            <div className="hidden md:block" style={{ backgroundColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }} />
 
             <div className="min-h-0 overflow-hidden p-3">
               <div
@@ -525,7 +529,7 @@ function SuiviPage({ onLogout }) {
                 style={panelStyle}
               >
                 {!selectedItem ? (
-                  <div className="flex h-full min-h-[280px] items-center justify-center text-center text-theme-text2">
+                  <div className="flex h-full min-h-[280px] items-center justify-center text-center text-theme-muted">
                     Selectionne un disciple pour voir ses reponses
                   </div>
                 ) : (
@@ -543,7 +547,7 @@ function SuiviPage({ onLogout }) {
                         </div>
                         <div>
                           <p className="text-base font-semibold text-theme-text1">{selectedItem.name}</p>
-                          <p className="text-xs text-theme-text2">{selectedItem.discipleId}</p>
+                          <p className="text-xs text-theme-muted">{selectedItem.discipleId}</p>
                         </div>
                       </div>
 
@@ -591,7 +595,7 @@ function SuiviPage({ onLogout }) {
                       </section>
                     ) : (
                       <section className="rounded-lg border border-theme-border p-4">
-                        <p className="mb-3 text-sm text-theme-text2">Ce disciple n'a pas encore repondu aujourd'hui.</p>
+                        <p className="mb-3 text-sm text-theme-muted">Ce disciple n'a pas encore repondu aujourd'hui.</p>
                         <button
                           type="button"
                           onClick={() => setShowCheckinModal(true)}
@@ -606,7 +610,7 @@ function SuiviPage({ onLogout }) {
                     <section className="rounded-lg border border-theme-border p-3">
                       <h4 className="mb-2 text-sm font-semibold text-theme-text1">Historique 7 derniers jours</h4>
 
-                      {historyLoading ? <p className="text-xs text-theme-text2">Chargement historique...</p> : null}
+                      {historyLoading ? <p className="text-xs text-theme-muted">Chargement historique...</p> : null}
 
                       <div className="space-y-2">
                         {sevenDayRows.map((row, index) => (
@@ -615,7 +619,7 @@ function SuiviPage({ onLogout }) {
                             className="suivi-fade-in flex items-center justify-between rounded-md border border-theme-border px-2 py-2"
                             style={{ animationDelay: `${index * 35}ms` }}
                           >
-                            <span className="text-xs text-theme-text2">{row.label}</span>
+                            <span className="text-xs text-theme-muted">{row.label}</span>
                             <span
                               className={`rounded-full px-2 py-1 text-[11px] font-medium ${
                                 row.status === "repondu"

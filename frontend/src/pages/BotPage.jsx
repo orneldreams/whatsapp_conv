@@ -17,6 +17,7 @@ import { Clock3, Eye, GripVertical, PlusCircle, Save, Smartphone } from "lucide-
 import api, { getErrorMessage } from "../api/client";
 import ConfirmModal from "../components/ConfirmModal";
 import Layout from "../components/Layout";
+import { useTheme } from "../context/ThemeContext";
 
 function normalizeQuestionAccents(text) {
   if (typeof text !== "string") return text;
@@ -59,7 +60,7 @@ function HourDropdown({ value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-lg border border-theme-border bg-transparent px-3 py-2 text-sm text-theme-text1"
+        className="secondary-accent-control flex w-full items-center justify-between rounded-lg border border-theme-border bg-transparent px-3 py-2 text-sm text-theme-text1"
       >
         <span>{String(value).padStart(2, "0")}h</span>
         <span className="text-theme-text2">▾</span>
@@ -99,7 +100,7 @@ function MinuteDropdown({ value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-lg border border-theme-border bg-transparent px-3 py-2 text-sm text-theme-text1"
+        className="secondary-accent-control flex w-full items-center justify-between rounded-lg border border-theme-border bg-transparent px-3 py-2 text-sm text-theme-text1"
       >
         <span>{String(value).padStart(2, "0")}</span>
         <span className="text-theme-text2">▾</span>
@@ -131,6 +132,7 @@ function MinuteDropdown({ value, onChange }) {
 }
 
 function SortableQuestionRow({ rowId, question, index, onUpdate, onDelete, totalCount }) {
+  const { theme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(question);
 
@@ -200,8 +202,10 @@ function SortableQuestionRow({ rowId, question, index, onUpdate, onDelete, total
       <button
         type="button"
         onClick={() => onDelete(index, totalCount)}
-        className="rounded-md border px-2 py-1 text-[12px] text-[#6B7280] bg-transparent transition-all opacity-0 group-hover:opacity-100 hover:border-[#EF4444] hover:text-[#EF4444]"
-        style={{ borderWidth: "0.5px", borderColor: "#2D2A3E" }}
+        className={`rounded-md border px-2 py-1 text-[12px] bg-transparent transition-all opacity-0 group-hover:opacity-100 hover:border-[#EF4444] hover:text-[#EF4444] ${
+          theme === "dark" ? "text-[#9CA3AF]" : "text-[#4B5563]"
+        }`}
+        style={{ borderWidth: "0.5px", borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}
       >
         ✕
       </button>
@@ -210,6 +214,7 @@ function SortableQuestionRow({ rowId, question, index, onUpdate, onDelete, total
 }
 
 function QuestionsColumn({ title, icon, questions, onChange, onDelete }) {
+  const { theme } = useTheme();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const isEmpty = questions.length === 0;
   const isFull = questions.length >= 5;
@@ -228,7 +233,13 @@ function QuestionsColumn({ title, icon, questions, onChange, onDelete }) {
   }
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col rounded-[12px] border border-[#2D2A3E] bg-[#1A1825] p-4">
+    <section
+      className={`flex min-h-0 flex-1 flex-col rounded-[12px] border p-4 ${
+        theme === "dark"
+          ? "border-[#2D2A3E] bg-[#1A1825]"
+          : "border-[#C4B5FD] bg-white shadow-[0_2px_8px_rgba(108,63,232,0.10)]"
+      }`}
+    >
       <div className="mb-4 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-base font-semibold text-theme-text1">
           {icon}
@@ -279,7 +290,7 @@ function QuestionsColumn({ title, icon, questions, onChange, onDelete }) {
         title={maxReached}
         className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed px-3 py-2 text-sm font-medium transition-colors ${
           isFull
-            ? "border-[#2D2A3E] text-[#6B7280] cursor-not-allowed opacity-60"
+            ? `${theme === "dark" ? "border-[#2D2A3E] text-[#9CA3AF]" : "border-[#C4B5FD] text-[#4B5563]"} cursor-not-allowed opacity-60`
             : "border-[#6C3FE8] text-[#6C3FE8] hover:bg-[#6C3FE8]/10"
         }`}
         style={{ borderRadius: "8px" }}
@@ -312,6 +323,7 @@ function BotPage({ onLogout }) {
 }
 
 function BotPageContent({ onLogout }) {
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -442,7 +454,13 @@ function BotPageContent({ onLogout }) {
           />
 
           {/* Droite : Paramètres */}
-          <section className="flex flex-col rounded-[12px] border border-[#2D2A3E] bg-[#1A1825] p-4">
+          <section
+            className={`flex flex-col rounded-[12px] border p-4 ${
+              theme === "dark"
+                ? "border-[#2D2A3E] bg-[#1A1825]"
+                : "border-[#C4B5FD] bg-white shadow-[0_2px_8px_rgba(108,63,232,0.10)]"
+            }`}
+          >
             {/* Heure d'envoi */}
             <div className="mb-6">
               <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-theme-text1">
@@ -469,7 +487,7 @@ function BotPageContent({ onLogout }) {
                   />
                 </div>
               </div>
-              <p className="text-xs text-theme-text2">
+                <p className="text-xs text-theme-muted">
                 Le check-in sera envoyé à{" "}
                 <span className="font-semibold text-theme-text1">
                   {String(form.checkinHour).padStart(2, "0")}h
@@ -479,7 +497,7 @@ function BotPageContent({ onLogout }) {
               </p>
             </div>
 
-            <div className="mb-6 border-t border-[#2D2A3E]" />
+            <div className={`mb-6 border-t ${theme === "dark" ? "border-[#2D2A3E]" : "border-[#C4B5FD]"}`} />
 
             {/* Numéro pasteur */}
             <div className="mb-6">
@@ -519,7 +537,7 @@ function BotPageContent({ onLogout }) {
               {saving ? "Sauvegarde..." : "Sauvegarder"}
             </button>
 
-            <div className="mb-4 border-t border-[#2D2A3E]" />
+            <div className={`mb-4 border-t ${theme === "dark" ? "border-[#2D2A3E]" : "border-[#C4B5FD]"}`} />
 
             {/* Prévisualisation WhatsApp */}
             <div>
@@ -527,7 +545,7 @@ function BotPageContent({ onLogout }) {
                 <Eye size={14} className="text-[#6C3FE8]" />
                 Aperçu sur WhatsApp
               </h4>
-              <div className="mb-3 inline-flex rounded-lg border border-[#2D2A3E] bg-theme-bg p-1 text-xs">
+              <div className={`mb-3 inline-flex rounded-lg border bg-theme-bg p-1 text-xs ${theme === "dark" ? "border-[#2D2A3E]" : "border-[#C4B5FD]"}`}>
                 <button
                   type="button"
                   onClick={() => setPreviewMode("onboarding")}
@@ -565,11 +583,11 @@ function BotPageContent({ onLogout }) {
                     </div>
                   </div>
                 )) : (
-                  <p className="text-xs text-theme-text2">
+                  <p className="text-xs text-theme-muted">
                     Aucune question {previewMode === "onboarding" ? "d'onboarding" : "de check-in"}
                   </p>
                 )}
-                <p className="mt-3 text-[11px] text-theme-text2">
+                <p className="mt-3 text-[11px] text-theme-muted">
                   Voici comment vos disciples verront les questions
                 </p>
               </div>
@@ -577,7 +595,7 @@ function BotPageContent({ onLogout }) {
           </section>
         </div>
       ) : (
-        <p className="text-theme-text2">Chargement...</p>
+        <p className="text-theme-muted">Chargement...</p>
       )}
 
       {confirmDelete ? (

@@ -13,11 +13,15 @@ export default {
         theme: {
           bg: "var(--bg-primary)",
           surface: "var(--bg-surface)",
+          surface2: "var(--bg-surface-2)",
           border: "var(--border)",
           text1: "var(--text-primary)",
           text2: "var(--text-secondary)",
           sidebar: "var(--sidebar-bg)"
         }
+      },
+      boxShadow: {
+        card: "var(--card-shadow)"
       }
     }
   },

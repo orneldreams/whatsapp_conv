@@ -41,7 +41,11 @@ function Layout({ title, onLogout, children }) {
                 to={link.to}
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
-                    isActive ? "text-[#6C3FE8]" : "text-[#9CA3AF] hover:text-white"
+                    isActive
+                      ? "text-[#6C3FE8]"
+                      : theme === "dark"
+                        ? "text-[#9CA3AF] hover:text-white"
+                        : "text-[#C4B5FD] hover:text-white"
                   }`
                 }
               >
@@ -52,7 +56,7 @@ function Layout({ title, onLogout, children }) {
           </nav>
           <button
             onClick={onLogout}
-            className="absolute bottom-6 left-5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[#9CA3AF] transition-colors hover:text-white"
+            className="absolute bottom-6 left-5 inline-flex items-center gap-2.5 rounded-lg px-4 py-2.5 text-[14px] font-medium text-[#F87171] transition-all duration-150 hover:bg-[rgba(248,113,113,0.15)] hover:text-[#FCA5A5]"
           >
             <LogOut size={18} />
             Déconnexion

@@ -5,15 +5,16 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #f8f7ff;
-  --bg-surface: #ffffff;
-  --bg-surface-2: #f3f0ff;
-  --border: #e5e1ff;
-  --text-primary: #1a1040;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
+  --bg-primary: #D4C2FF;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #F5F3FF;
+  --border: #C4B5FD;
+  --card-shadow: 0 2px 8px rgba(108, 63, 232, 0.10);
+  --text-primary: #111827;
+  --text-secondary: #3730A3;
+  --text-muted: #4B5563;
   --sidebar-bg: #1a1040;
-  --sidebar-text: #9ca3af;
+  --sidebar-text: #C4B5FD;
   --sidebar-active: #ffffff;
 }
 
@@ -47,6 +48,68 @@ body {
   font-size: 14px;
   background: var(--bg-primary);
   color: var(--text-primary);
+}
+
+.text-theme-muted {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .shadow-card,
+.light .shadow-card {
+  background-color: #FFFFFF;
+  border-color: var(--border);
+  box-shadow: var(--card-shadow);
+}
+
+[data-theme="light"] .secondary-accent-button,
+.light .secondary-accent-button {
+  background-color: #FFFFFF;
+  border-color: #B9A6FF;
+  color: #6C3FE8;
+  box-shadow: 0 2px 8px rgba(108, 63, 232, 0.10);
+}
+
+[data-theme="light"] .secondary-accent-button:hover,
+.light .secondary-accent-button:hover {
+  background-color: #F5F3FF;
+}
+
+[data-theme="light"] .secondary-accent-pill,
+.light .secondary-accent-pill {
+  background-color: #FFFFFF;
+  border-color: #B9A6FF;
+  box-shadow: 0 2px 8px rgba(108, 63, 232, 0.08);
+}
+
+[data-theme="light"] .secondary-accent-control,
+.light .secondary-accent-control {
+  background-color: #FFFFFF;
+  border-color: #B9A6FF;
+  box-shadow: 0 2px 8px rgba(108, 63, 232, 0.08);
+}
+
+[data-theme="light"] .secondary-accent-control:hover,
+.light .secondary-accent-control:hover {
+  background-color: #F5F3FF;
+}
+
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.light select,
+.light textarea {
+  background-color: #F5F3FF;
+  border-color: #C4B5FD;
+}
+
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus,
+.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.light select:focus,
+.light textarea:focus {
+  border-color: #6C3FE8;
 }
 
 @keyframes suiviFadeInUp {
