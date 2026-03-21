@@ -17,6 +17,7 @@ import { Clock3, Eye, GripVertical, PlusCircle, Save, Smartphone } from "lucide-
 import api, { getErrorMessage } from "../api/client";
 import ConfirmModal from "../components/ConfirmModal";
 import Layout from "../components/Layout";
+import PhoneInput from "../components/PhoneInput";
 import { useTheme } from "../context/ThemeContext";
 
 function normalizeQuestionAccents(text) {
@@ -506,18 +507,13 @@ function BotPageContent({ onLogout }) {
                   <Smartphone size={14} className="text-[#6C3FE8]" />
                   Numéro WhatsApp (résumé hebdo)
                 </span>
-                <input
-                  type="tel"
+                <PhoneInput
                   value={form.pastorPhone}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, pastorPhone: e.target.value }))
+                  onChange={(nextPhone) =>
+                    setForm((prev) => ({ ...prev, pastorPhone: nextPhone }))
                   }
+                  theme={theme}
                   placeholder="+237 6XX XXX XXX"
-                  className={`w-full rounded-lg border px-3 py-2 text-sm bg-transparent text-theme-text1 outline-none focus:border-[#6C3FE8] ${
-                    form.pastorPhone && !validatePhone(form.pastorPhone)
-                      ? "border-[#EF4444]"
-                      : "border-theme-border"
-                  }`}
                 />
                 {form.pastorPhone && !validatePhone(form.pastorPhone) && (
                   <p className="mt-1 text-xs text-[#EF4444]">

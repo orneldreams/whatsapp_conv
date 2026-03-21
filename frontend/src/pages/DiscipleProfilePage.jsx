@@ -4,9 +4,12 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import api, { getErrorMessage } from "../api/client";
 import ConfirmModal from "../components/ConfirmModal";
+import CountrySelect from "../components/CountrySelect";
 import Layout from "../components/Layout";
+import PhoneInput from "../components/PhoneInput";
 import SingleDiscipleCheckinModal from "../components/SingleDiscipleCheckinModal";
 import { useTheme } from "../context/ThemeContext";
+import { formatCountryWithFlag } from "../utils/countries";
 
 const avatarColors = [
   { bg: "#4F46E5", text: "#fff" },
@@ -261,21 +264,19 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
 
     if (field.type === "phone") {
       return (
-        <input
-          type="tel"
+        <PhoneInput
           value={value}
-          onChange={(event) =>
+          onChange={(nextPhone) =>
             setForm((prev) => ({
               ...prev,
               customFields: {
                 ...prev.customFields,
-                [field.key]: event.target.value
+                [field.key]: nextPhone
               }
             }))
           }
+          theme={theme}
           placeholder="+XXX..."
-          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-          style={inputStyle}
         />
       );
     }
@@ -379,40 +380,36 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
 
             <label className="block text-sm">
               <span className="mb-1 block" style={labelStyle}>Numéro WhatsApp *</span>
-              <input
+              <PhoneInput
                 value={form.phoneNumber}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, phoneNumber: event.target.value }))
+                onChange={(nextPhone) =>
+                  setForm((prev) => ({ ...prev, phoneNumber: nextPhone }))
                 }
-                className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                style={inputStyle}
+                theme={theme}
                 placeholder="+237 6XX XXX XXX"
-                required
               />
             </label>
 
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm">
                 <span className="mb-1 block" style={labelStyle}>Pays d'origine</span>
-                <input
+                <CountrySelect
                   value={form.originCountry}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, originCountry: capitalizeFirstLetter(event.target.value) }))
+                  onChange={(nextCountry) =>
+                    setForm((prev) => ({ ...prev, originCountry: nextCountry }))
                   }
-                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                  style={inputStyle}
+                  theme={theme}
                 />
               </label>
 
               <label className="block text-sm">
                 <span className="mb-1 block" style={labelStyle}>Pays actuel</span>
-                <input
+                <CountrySelect
                   value={form.currentCountry}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, currentCountry: capitalizeFirstLetter(event.target.value) }))
+                  onChange={(nextCountry) =>
+                    setForm((prev) => ({ ...prev, currentCountry: nextCountry }))
                   }
-                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                  style={inputStyle}
+                  theme={theme}
                 />
               </label>
             </div>
@@ -540,11 +537,11 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
             <div className="space-y-2 text-sm">
               <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays d'origine</span>
-                {displayReadValue(form.originCountry)}
+                {displayReadValue(form.originCountry ? formatCountryWithFlag(form.originCountry) : "")}
               </div>
               <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays actuel</span>
-                {displayReadValue(form.currentCountry)}
+                {displayReadValue(form.currentCountry ? formatCountryWithFlag(form.currentCountry) : "")}
               </div>
               <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Date conversion</span>
@@ -925,14 +922,14 @@ function DiscipleProfilePage({ onLogout }) {
                 <div>
                   <p className="text-[11px] text-theme-text2">Pays d'origine</p>
                   <p className="text-[13px] font-semibold text-theme-text1">
-                    {displayReadValue(disciple.originCountry)}
+                    {displayReadValue(disciple.originCountry ? formatCountryWithFlag(disciple.originCountry) : "")}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[11px] text-theme-text2">Pays actuel</p>
                   <p className="text-[13px] font-semibold text-theme-text1">
-                    {displayReadValue(disciple.currentCountry)}
+                    {displayReadValue(disciple.currentCountry ? formatCountryWithFlag(disciple.currentCountry) : "")}
                   </p>
                 </div>
 

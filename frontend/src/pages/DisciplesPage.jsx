@@ -12,11 +12,14 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import api, { getErrorMessage } from "../api/client";
+import CountrySelect from "../components/CountrySelect";
 import ConfirmModal from "../components/ConfirmModal";
 import Layout from "../components/Layout";
 import ManualCheckinModal from "../components/ManualCheckinModal";
+import PhoneInput from "../components/PhoneInput";
 import SingleDiscipleCheckinModal from "../components/SingleDiscipleCheckinModal";
 import { useTheme } from "../context/ThemeContext";
+import { formatCountryWithFlag } from "../utils/countries";
 
 const avatarColors = [
   { bg: "#4F46E5", text: "#fff" },
@@ -373,34 +376,30 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
 
             <label className="block text-sm">
               <span className="mb-1 block" style={labelStyle}>Numero WhatsApp *</span>
-              <input
+              <PhoneInput
                 value={newDisciple.phoneNumber}
-                onChange={(e) => setNewDisciple((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-                className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                style={inputStyle}
+                onChange={(nextPhone) => setNewDisciple((prev) => ({ ...prev, phoneNumber: nextPhone }))}
+                theme={theme}
                 placeholder="+237 6XX XXX XXX"
-                required
               />
             </label>
 
             <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm">
                 <span className="mb-1 block" style={labelStyle}>Pays d'origine</span>
-                <input
+                <CountrySelect
                   value={newDisciple.originCountry}
-                  onChange={(e) => setNewDisciple((prev) => ({ ...prev, originCountry: e.target.value }))}
-                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                  style={inputStyle}
+                  onChange={(nextCountry) => setNewDisciple((prev) => ({ ...prev, originCountry: nextCountry }))}
+                  theme={theme}
                 />
               </label>
 
               <label className="block text-sm">
                 <span className="mb-1 block" style={labelStyle}>Pays actuel</span>
-                <input
+                <CountrySelect
                   value={newDisciple.currentCountry}
-                  onChange={(e) => setNewDisciple((prev) => ({ ...prev, currentCountry: e.target.value }))}
-                  className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-                  style={inputStyle}
+                  onChange={(nextCountry) => setNewDisciple((prev) => ({ ...prev, currentCountry: nextCountry }))}
+                  theme={theme}
                 />
               </label>
             </div>
@@ -497,11 +496,11 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays d'origine</span>
-                <span>{newDisciple.originCountry || "—"}</span>
+                <span>{newDisciple.originCountry ? formatCountryWithFlag(newDisciple.originCountry) : "—"}</span>
               </div>
               <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays actuel</span>
-                <span>{newDisciple.currentCountry || "—"}</span>
+                <span>{newDisciple.currentCountry ? formatCountryWithFlag(newDisciple.currentCountry) : "—"}</span>
               </div>
               <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Date conversion</span>
@@ -803,7 +802,7 @@ function DisciplesPage({ onLogout }) {
               <option value="all">Tous pays</option>
               {countries.map((country) => (
                 <option key={country} value={country}>
-                  {country}
+                  {formatCountryWithFlag(country)}
                 </option>
               ))}
             </select>
@@ -900,7 +899,7 @@ function DisciplesPage({ onLogout }) {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 text-[14px] text-theme-muted">{disciple.currentCountry || "—"}</td>
+                      <td className="px-4 py-3 text-[14px] text-theme-muted">{disciple.currentCountry ? formatCountryWithFlag(disciple.currentCountry) : "—"}</td>
                       <td className="px-4 py-3 text-[14px] text-theme-muted">{disciple.church || "—"}</td>
                       <td className="px-4 py-3">
                         <span className={`rounded-full px-2 py-1 text-[12px] font-medium ${statusClass(disciple.status, theme === "dark")}`}>
@@ -1023,11 +1022,11 @@ function DisciplesPage({ onLogout }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-[11px] text-theme-text2 mb-1">Pays origine</p>
-                      <p className="text-[13px] font-semibold text-theme-text1">{disciple.originCountry || "—"}</p>
+                      <p className="text-[13px] font-semibold text-theme-text1">{disciple.originCountry ? formatCountryWithFlag(disciple.originCountry) : "—"}</p>
                     </div>
                     <div>
                       <p className="text-[11px] text-theme-text2 mb-1">Pays actuel</p>
-                      <p className="text-[13px] font-semibold text-theme-text1">{disciple.currentCountry || "—"}</p>
+                      <p className="text-[13px] font-semibold text-theme-text1">{disciple.currentCountry ? formatCountryWithFlag(disciple.currentCountry) : "—"}</p>
                     </div>
                     <div>
                       <p className="text-[11px] text-theme-text2 mb-1">Église</p>

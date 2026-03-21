@@ -22,6 +22,7 @@ import Layout from "../components/Layout";
 import { useTheme } from "../context/ThemeContext";
 import StatCard from "../components/StatCard";
 import ManualCheckinModal from "../components/ManualCheckinModal";
+import { formatCountryWithFlag } from "../utils/countries";
 
 const avatarColors = [
   { bg: "#4F46E5", text: "#fff" },
@@ -181,6 +182,11 @@ function OverviewPage({ onLogout }) {
                   <div key={`${item.discipleId}-${index}`} className="flex items-center justify-between border-b border-theme-border pb-3">
                     <div>
                       <p className="text-[14px] font-semibold">{item.name}</p>
+                      {item.currentCountry || item.country || item.originCountry ? (
+                        <p className="text-[12px] text-theme-muted">
+                          {formatCountryWithFlag(item.currentCountry || item.country || item.originCountry)}
+                        </p>
+                      ) : null}
                       <p className="text-[13px] text-theme-muted">{item.excerpt}</p>
                     </div>
                     <span
