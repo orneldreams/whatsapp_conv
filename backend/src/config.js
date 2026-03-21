@@ -1,0 +1,51 @@
+const dotenv = require("dotenv");
+
+dotenv.config();
+
+const config = {
+  nodeEnv: process.env.NODE_ENV || "development",
+  port: Number(process.env.PORT || 3000),
+  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  dashboardPassword: process.env.DASHBOARD_PASSWORD || "",
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    fromNumber: process.env.TWILIO_WHATSAPP_NUMBER,
+    webhookUrl: process.env.TWILIO_WEBHOOK_URL,
+    validateSignature: process.env.TWILIO_VALIDATE_SIGNATURE !== "false",
+    // Numero du pasteur (contrainte: en dur dans le code pour le MVP)
+    pastorNumber: "whatsapp:+225000000000"
+  },
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY
+      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      : undefined
+  },
+  redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+  schedule: {
+    checkinHour: Number(process.env.CHECKIN_HOUR || 20),
+    checkinMinute: Number(process.env.CHECKIN_MINUTE || 0),
+    weeklySummaryDay: Number(process.env.WEEKLY_SUMMARY_DAY || 0)
+  }
+};
+
+const requiredEnv = [
+  ["TWILIO_ACCOUNT_SID", config.twilio.accountSid],
+  ["TWILIO_AUTH_TOKEN", config.twilio.authToken],
+  ["TWILIO_WHATSAPP_NUMBER", config.twilio.fromNumber],
+  ["FIREBASE_PROJECT_ID", config.firebase.projectId],
+  ["FIREBASE_CLIENT_EMAIL", config.firebase.clientEmail],
+  ["FIREBASE_PRIVATE_KEY", config.firebase.privateKey]
+];
+
+if (config.nodeEnv !== "test") {
+  const missing = requiredEnv.filter(([, value]) => !value).map(([key]) => key);
+
+  if (missing.length > 0) {
+    throw new Error(`Variables d'environnement manquantes: ${missing.join(", ")}`);
+  }
+}
+
+module.exports = config;
