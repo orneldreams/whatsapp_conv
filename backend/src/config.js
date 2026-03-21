@@ -6,15 +6,13 @@ const config = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 3000),
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
-  dashboardPassword: process.env.DASHBOARD_PASSWORD || "",
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,
     fromNumber: process.env.TWILIO_WHATSAPP_NUMBER,
     webhookUrl: process.env.TWILIO_WEBHOOK_URL,
     validateSignature: process.env.TWILIO_VALIDATE_SIGNATURE !== "false",
-    // Numero du pasteur (contrainte: en dur dans le code pour le MVP)
-    pastorNumber: "whatsapp:+225000000000"
+    pastorNumber: process.env.PASTOR_WHATSAPP_NUMBER || ""
   },
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID,

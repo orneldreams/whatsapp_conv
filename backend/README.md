@@ -4,6 +4,7 @@ Bot WhatsApp en francais pour le suivi individuel pastoral:
 - onboarding sequentiel en 3 questions
 - check-in quotidien a 20h
 - resume hebdomadaire envoye au pasteur
+- API dashboard protegee par Firebase Auth
 
 ## 1. Prerequis
 
@@ -11,6 +12,7 @@ Bot WhatsApp en francais pour le suivi individuel pastoral:
 - Redis local (ou URL distante)
 - Compte Twilio WhatsApp Sandbox/API
 - Service account Firebase Admin
+- Projet Firebase avec Authentication active (email/mot de passe)
 
 ## 2. Installation
 
@@ -31,8 +33,8 @@ TWILIO_WEBHOOK_URL=https://<ton-ngrok>/webhook/twilio
 
 4. Mettre le numero du pasteur en dur dans `src/config.js`:
 
-```js
-pastorNumber: "whatsapp:+225000000000"
+```env
+PASTOR_WHATSAPP_NUMBER=whatsapp:+225000000000
 ```
 
 ## 4. Lancer en local
@@ -55,6 +57,15 @@ Terminal 3 (scheduler cron):
 npm run scheduler
 ```
 
+## 4bis. Migrer les anciens disciples
+
+Les documents legacy `users/{phoneNumber}` doivent etre copies vers `pasteurs/{pasteurId}/disciples/{phoneNumber}`.
+
+```bash
+npm run migrate:users -- --dry-run
+npm run migrate:users
+```
+
 ## 5. Exposer le webhook via ngrok
 
 ```bash
@@ -71,7 +82,13 @@ Important: `TWILIO_WEBHOOK_URL` dans `.env` doit etre exactement la meme URL que
 
 ## 6. Structure Firestore
 
-### users/{phoneNumber}
+### pasteurs/{pasteurId}
+- `email: string`
+- `displayName: string`
+- `createdAt: timestamp`
+- `updatedAt: timestamp`
+
+### pasteurs/{pasteurId}/disciples/{phoneNumber}
 - `name: string`
 - `faithStatus: string`
 - `prayerIntention: string`
@@ -79,15 +96,20 @@ Important: `TWILIO_WEBHOOK_URL` dans `.env` doit etre exactement la meme URL que
 - `createdAt: timestamp`
 - `lastContact: timestamp`
 
-### users/{phoneNumber}/checkins/{YYYY-MM-DD}
+### pasteurs/{pasteurId}/disciples/{phoneNumber}/checkins/{YYYY-MM-DD}
 - `dayFeeling: string`
 - `prayed: boolean`
 - `verse: string`
 - `createdAt: timestamp`
 
+### pasteurs/{pasteurId}/config/bot
+- `onboardingQuestions: string[]`
+- `checkinQuestions: string[]`
+- `pastorPhone: string`
+
 ## 7. Notes MVP
 
 - La cle primaire absolue est le numero WhatsApp (`From` Twilio)
 - Onboarding et check-in sont sequentiels (une question a la fois)
-- Pas de dashboard web
+- Le dashboard web consomme les endpoints `/api/*` avec un ID token Firebase
 - Toute la conversation est en francais

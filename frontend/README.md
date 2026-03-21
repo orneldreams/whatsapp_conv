@@ -1,16 +1,46 @@
-# React + Vite
+# Frontend Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Dashboard React/Vite pour DiscipLink.
 
-Currently, two official plugins are available:
+## Installation
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+```
 
-## React Compiler
+## Variables d'environnement
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Copie `.env.example` vers `.env` puis renseigne:
 
-## Expanding the ESLint configuration
+```env
+VITE_API_BASE_URL=http://localhost:3000
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Le frontend utilise Firebase Authentication pour:
+
+- la connexion email/mot de passe
+- la page mot de passe oublie
+- l'envoi automatique du token Firebase vers le backend
+
+## Lancer en local
+
+```bash
+npm run dev
+```
+
+## Build production
+
+```bash
+npm run build
+```
+
+## Notes
+
+- La page d'inscription existe mais n'est pas exposee publiquement.
+- Les comptes pasteur doivent etre crees depuis Firebase Authentication.

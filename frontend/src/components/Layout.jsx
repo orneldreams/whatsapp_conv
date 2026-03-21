@@ -1,15 +1,19 @@
-import { NavLink } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Bot,
   CalendarCheck,
+  ChevronDown,
   LayoutDashboard,
   LogOut,
   Moon,
   Settings,
   Sun,
+  UserCircle2,
   Users
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 const links = [
   { to: "/", label: "Vue d'ensemble", icon: LayoutDashboard },
@@ -19,10 +23,50 @@ const links = [
   { to: "/bot", label: "Bot", icon: Bot }
 ];
 
-function Layout({ title, onLogout, children }) {
+function getInitials(name) {
+  if (!name) {
+    return "?";
+  }
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function Layout({ title, subtitle = "", onLogout, children }) {
   const { theme, toggleTheme } = useTheme();
+  const { profile, user } = useAuth();
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const displayName = useMemo(() => {
+    if (profile?.displayName) {
+      return profile.displayName;
+    }
+    if (profile?.firstName || profile?.lastName) {
+      return [profile.firstName, profile.lastName].filter(Boolean).join(" ");
+    }
+    if (user?.displayName) {
+      return user.displayName;
+    }
+    if (user?.email) {
+      return user.email;
+    }
+    return "Pasteur";
+  }, [profile, user]);
+
   const activeLink = links.find((link) => link.label === title);
   const TitleIcon = activeLink?.icon;
+
+  async function handleLogoutClick() {
+    setMenuOpen(false);
+    await onLogout?.();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <div>
@@ -55,20 +99,24 @@ function Layout({ title, onLogout, children }) {
             ))}
           </nav>
           <button
-            onClick={onLogout}
+            onClick={handleLogoutClick}
             className="absolute bottom-6 left-5 inline-flex items-center gap-2.5 rounded-lg px-4 py-2.5 text-[14px] font-medium text-[#F87171] transition-all duration-150 hover:bg-[rgba(248,113,113,0.15)] hover:text-[#FCA5A5]"
           >
             <LogOut size={18} />
-            Déconnexion
+            Deconnexion
           </button>
         </aside>
 
         <header className="fixed left-0 right-0 top-0 z-10 border-b border-theme-border bg-theme-surface/95 px-4 py-3 backdrop-blur lg:left-60">
           <div className="mx-auto flex max-w-7xl items-center justify-between">
-            <h2 className="flex items-center gap-2 text-xl font-semibold text-theme-text1">
-              {TitleIcon ? <TitleIcon size={20} className="text-[#6C3FE8]" /> : null}
-              {title}
-            </h2>
+            <div>
+              <h2 className="flex items-center gap-2 text-xl font-semibold text-theme-text1">
+                {TitleIcon ? <TitleIcon size={20} className="text-[#6C3FE8]" /> : null}
+                {title}
+              </h2>
+              {subtitle ? <p className="text-xs text-theme-text2">{subtitle}</p> : null}
+            </div>
+
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleTheme}
@@ -77,8 +125,43 @@ function Layout({ title, onLogout, children }) {
                 {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
                 {theme === "light" ? "Dark" : "Light"}
               </button>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white">
-                PK
+
+              <div className="relative">
+                <button
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                  className="flex items-center gap-2 rounded-full border border-theme-border px-2 py-1"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white">
+                    {getInitials(displayName)}
+                  </div>
+                  <ChevronDown size={16} className="text-theme-text2" />
+                </button>
+
+                {menuOpen ? (
+                  <div className="absolute right-0 top-12 z-20 w-56 rounded-xl border border-theme-border bg-theme-surface p-2 shadow-lg">
+                    <div className="border-b border-theme-border px-2 pb-2">
+                      <p className="text-sm font-semibold text-theme-text1">{displayName}</p>
+                      <p className="text-xs text-theme-text2">{profile?.email || user?.email || ""}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/profil");
+                      }}
+                      className="mt-2 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-theme-text1 hover:bg-theme-bg"
+                    >
+                      <UserCircle2 size={16} />
+                      Profil
+                    </button>
+                    <button
+                      onClick={handleLogoutClick}
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-red-500 hover:bg-red-500/10"
+                    >
+                      <LogOut size={16} />
+                      Deconnexion
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

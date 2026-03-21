@@ -13,6 +13,18 @@ const {
 
 const router = express.Router();
 
+function getPasteurRef(req) {
+  return db.collection("pasteurs").doc(req.userId);
+}
+
+function getDisciplesCollection(req) {
+  return getPasteurRef(req).collection("disciples");
+}
+
+function getConfigCollection(req) {
+  return getPasteurRef(req).collection("config");
+}
+
 function getBotDefaults() {
   return {
     onboardingQuestions: [
@@ -31,8 +43,8 @@ function getBotDefaults() {
   };
 }
 
-async function getFieldsConfig() {
-  const fieldsDoc = await db.collection("config").doc("fields").get();
+async function getFieldsConfig(req) {
+  const fieldsDoc = await getConfigCollection(req).doc("fields").get();
   if (!fieldsDoc.exists) {
     return [];
   }
@@ -49,8 +61,8 @@ async function getFieldsConfig() {
   return [];
 }
 
-async function saveFieldsConfig(fields) {
-  await db.collection("config").doc("fields").set(
+async function saveFieldsConfig(req, fields) {
+  await getConfigCollection(req).doc("fields").set(
     {
       items: fields,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -72,8 +84,8 @@ const baseFieldDefaults = [
   { key: "church", label: "Église", type: "text" }
 ];
 
-async function getBaseFieldLabelsConfig() {
-  const doc = await db.collection("config").doc("baseFieldLabels").get();
+async function getBaseFieldLabelsConfig(req) {
+  const doc = await getConfigCollection(req).doc("baseFieldLabels").get();
   if (!doc.exists) {
     return {};
   }
@@ -82,8 +94,8 @@ async function getBaseFieldLabelsConfig() {
   return data.labels && typeof data.labels === "object" ? data.labels : {};
 }
 
-async function saveBaseFieldLabel(fieldKey, label) {
-  await db.collection("config").doc("baseFieldLabels").set(
+async function saveBaseFieldLabel(req, fieldKey, label) {
+  await getConfigCollection(req).doc("baseFieldLabels").set(
     {
       labels: {
         [fieldKey]: String(label || "")
@@ -94,17 +106,17 @@ async function saveBaseFieldLabel(fieldKey, label) {
   );
 }
 
-async function getBaseFieldsConfig() {
-  const labels = await getBaseFieldLabelsConfig();
+async function getBaseFieldsConfig(req) {
+  const labels = await getBaseFieldLabelsConfig(req);
   return baseFieldDefaults.map((field) => ({
     ...field,
     label: labels[field.key] || field.label
   }));
 }
 
-async function getBotConfig() {
+async function getBotConfig(req) {
   const defaults = getBotDefaults();
-  const botDoc = await db.collection("config").doc("bot").get();
+  const botDoc = await getConfigCollection(req).doc("bot").get();
 
   if (!botDoc.exists) {
     return defaults;
@@ -157,7 +169,7 @@ router.get("/disciples", async (req, res) => {
     const pageItems = [];
 
     while (true) {
-      let query = db.collection("users").orderBy("createdAt", "desc").limit(chunkSize);
+      let query = getDisciplesCollection(req).orderBy("createdAt", "desc").limit(chunkSize);
       if (lastDoc) {
         query = query.startAfter(lastDoc);
       }
@@ -232,7 +244,7 @@ router.post("/disciples", async (req, res) => {
     }
 
     const discipleId = ensurePhoneIdentifier(phoneNumber);
-    const userRef = db.collection("users").doc(discipleId);
+    const userRef = getDisciplesCollection(req).doc(discipleId);
 
     const payload = {
       phoneNumber: discipleId,
@@ -264,7 +276,7 @@ router.post("/disciples", async (req, res) => {
 router.get("/disciples/:id", async (req, res) => {
   try {
     const discipleId = ensurePhoneIdentifier(req.params.id);
-    const doc = await db.collection("users").doc(discipleId).get();
+    const doc = await getDisciplesCollection(req).doc(discipleId).get();
 
     if (!doc.exists) {
       return res.status(404).json({ error: "Disciple introuvable" });
@@ -279,7 +291,7 @@ router.get("/disciples/:id", async (req, res) => {
 router.put("/disciples/:id", async (req, res) => {
   try {
     const discipleId = ensurePhoneIdentifier(req.params.id);
-    const userRef = db.collection("users").doc(discipleId);
+    const userRef = getDisciplesCollection(req).doc(discipleId);
     const existing = await userRef.get();
 
     if (!existing.exists) {
@@ -323,7 +335,7 @@ router.put("/disciples/:id", async (req, res) => {
 router.delete("/disciples/:id", async (req, res) => {
   try {
     const discipleId = ensurePhoneIdentifier(req.params.id);
-    const userRef = db.collection("users").doc(discipleId);
+    const userRef = getDisciplesCollection(req).doc(discipleId);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
@@ -345,7 +357,7 @@ router.delete("/disciples/:id", async (req, res) => {
 router.get("/checkins", async (req, res) => {
   try {
     const targetDate = req.query.date || dayjs().format("YYYY-MM-DD");
-    const usersSnapshot = await db.collection("users").get();
+    const usersSnapshot = await getDisciplesCollection(req).get();
 
     const items = await Promise.all(
       usersSnapshot.docs.map(async (userDoc) => {
@@ -376,7 +388,7 @@ router.get("/checkins", async (req, res) => {
 router.get("/checkins/:discipleId", async (req, res) => {
   try {
     const discipleId = ensurePhoneIdentifier(req.params.discipleId);
-    const userRef = db.collection("users").doc(discipleId);
+    const userRef = getDisciplesCollection(req).doc(discipleId);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
@@ -400,9 +412,9 @@ router.get("/checkins/:discipleId", async (req, res) => {
   }
 });
 
-router.get("/stats", async (_req, res) => {
+router.get("/stats", async (req, res) => {
   try {
-    const usersSnapshot = await db.collection("users").get();
+    const usersSnapshot = await getDisciplesCollection(req).get();
     const users = usersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
     const totalDisciples = users.length;
@@ -417,8 +429,7 @@ router.get("/stats", async (_req, res) => {
         silentOver3Days += 1;
       }
 
-      const checkinDoc = await db
-        .collection("users")
+      const checkinDoc = await getDisciplesCollection(req)
         .doc(user.id)
         .collection("checkins")
         .doc(today)
@@ -435,8 +446,7 @@ router.get("/stats", async (_req, res) => {
       let responded = 0;
 
       for (const user of users) {
-        const checkinDoc = await db
-          .collection("users")
+        const checkinDoc = await getDisciplesCollection(req)
           .doc(user.id)
           .collection("checkins")
           .doc(date)
@@ -471,8 +481,7 @@ router.get("/stats", async (_req, res) => {
 
     const perUserRecent = await Promise.all(
       users.map(async (user) => {
-        const latestCheckin = await db
-          .collection("users")
+        const latestCheckin = await getDisciplesCollection(req)
           .doc(user.id)
           .collection("checkins")
           .orderBy("createdAt", "desc")
@@ -534,18 +543,18 @@ router.get("/stats", async (_req, res) => {
   }
 });
 
-router.get("/config/fields", async (_req, res) => {
+router.get("/config/fields", async (req, res) => {
   try {
-    const items = await getFieldsConfig();
+    const items = await getFieldsConfig(req);
     return res.json({ items });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 });
 
-router.get("/config/base-fields", async (_req, res) => {
+router.get("/config/base-fields", async (req, res) => {
   try {
-    const items = await getBaseFieldsConfig();
+    const items = await getBaseFieldsConfig(req);
     return res.json({ items });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -566,8 +575,8 @@ router.put("/config/base-fields/:key", async (req, res) => {
       return res.status(400).json({ error: "label requis" });
     }
 
-    await saveBaseFieldLabel(key, label);
-    const items = await getBaseFieldsConfig();
+    await saveBaseFieldLabel(req, key, label);
+    const items = await getBaseFieldsConfig(req);
     return res.json({ items });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -582,14 +591,14 @@ router.post("/config/fields", async (req, res) => {
       return res.status(400).json({ error: "key, label et type sont requis" });
     }
 
-    const fields = await getFieldsConfig();
+    const fields = await getFieldsConfig(req);
     const exists = fields.some((field) => field.key === key);
     if (exists) {
       return res.status(409).json({ error: "Ce champ existe deja" });
     }
 
     const next = [...fields, { key, label, type, options, required: Boolean(required), unit: type === "number" ? String(unit || "").trim() : "" }];
-    await saveFieldsConfig(next);
+    await saveFieldsConfig(req, next);
 
     return res.status(201).json({ items: next });
   } catch (error) {
@@ -624,7 +633,7 @@ router.put("/config/fields", async (req, res) => {
       return res.status(400).json({ error: "Les keys des champs doivent etre uniques" });
     }
 
-    await saveFieldsConfig(sanitized);
+    await saveFieldsConfig(req, sanitized);
     return res.json({ items: sanitized });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -634,7 +643,7 @@ router.put("/config/fields", async (req, res) => {
 router.put("/config/fields/:key", async (req, res) => {
   try {
     const key = req.params.key;
-    const fields = await getFieldsConfig();
+    const fields = await getFieldsConfig(req);
 
     const next = fields.map((field) => {
       if (field.key !== key) {
@@ -651,7 +660,7 @@ router.put("/config/fields/:key", async (req, res) => {
       };
     });
 
-    await saveFieldsConfig(next);
+    await saveFieldsConfig(req, next);
     return res.json({ items: next });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -661,10 +670,10 @@ router.put("/config/fields/:key", async (req, res) => {
 router.delete("/config/fields/:key", async (req, res) => {
   try {
     const key = req.params.key;
-    const fields = await getFieldsConfig();
+    const fields = await getFieldsConfig(req);
     const next = fields.filter((field) => field.key !== key);
 
-    const usersSnapshot = await db.collection("users").get();
+    const usersSnapshot = await getDisciplesCollection(req).get();
     let batch = db.batch();
     let writes = 0;
 
@@ -685,7 +694,7 @@ router.delete("/config/fields/:key", async (req, res) => {
       await batch.commit();
     }
 
-    await saveFieldsConfig(next);
+    await saveFieldsConfig(req, next);
 
     return res.json({ items: next });
   } catch (error) {
@@ -693,9 +702,9 @@ router.delete("/config/fields/:key", async (req, res) => {
   }
 });
 
-router.get("/bot/config", async (_req, res) => {
+router.get("/bot/config", async (req, res) => {
   try {
-    const botConfig = await getBotConfig();
+    const botConfig = await getBotConfig(req);
     return res.json(botConfig);
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -726,9 +735,9 @@ router.put("/bot/config", async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    await db.collection("config").doc("bot").set(payload, { merge: true });
+    await getConfigCollection(req).doc("bot").set(payload, { merge: true });
 
-    const botConfig = await getBotConfig();
+    const botConfig = await getBotConfig(req);
     return res.json(botConfig);
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -744,7 +753,7 @@ router.post("/checkins/send", async (req, res) => {
     }
 
     const normalizedId = ensurePhoneIdentifier(discipleId);
-    const userRef = db.collection("users").doc(normalizedId);
+    const userRef = getDisciplesCollection(req).doc(normalizedId);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
@@ -764,8 +773,15 @@ router.post("/checkins/send", async (req, res) => {
   }
 });
 
-router.get("/auth/check", (_req, res) => {
-  return res.json({ ok: true });
+router.get("/auth/check", (req, res) => {
+  return res.json({
+    ok: true,
+    user: {
+      uid: req.userId,
+      email: req.user?.email || null,
+      displayName: req.user?.name || req.user?.displayName || ""
+    }
+  });
 });
 
 module.exports = router;

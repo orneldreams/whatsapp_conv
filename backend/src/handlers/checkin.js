@@ -3,7 +3,7 @@ const { admin, db } = require("../services/firebase");
 const { sendWhatsAppMessage } = require("../services/twilio");
 const config = require("../config");
 
-const checkinQuestions = [
+const defaultCheckinQuestions = [
   "Comment s'est passee ta journee ?",
   "As-tu prie aujourd'hui ? (oui/non)",
   "Un verset ou une pensee du jour ?"
@@ -20,7 +20,38 @@ function normalizeBooleanAnswer(value) {
   return null;
 }
 
+async function getBotConfigForPasteur(pasteurId) {
+  if (!pasteurId) {
+    return {
+      checkinQuestions: defaultCheckinQuestions,
+      pastorPhone: config.twilio.pastorNumber
+    };
+  }
+
+  const botDoc = await db
+    .collection("pasteurs")
+    .doc(pasteurId)
+    .collection("config")
+    .doc("bot")
+    .get();
+
+  const botData = botDoc.exists ? botDoc.data() : {};
+  return {
+    checkinQuestions: Array.isArray(botData.checkinQuestions)
+      ? botData.checkinQuestions
+      : defaultCheckinQuestions,
+    pastorPhone: botData.pastorPhone || config.twilio.pastorNumber
+  };
+}
+
+async function getCheckinQuestionsForUser(userRef) {
+  const pasteurId = userRef.parent && userRef.parent.parent ? userRef.parent.parent.id : null;
+  const botConfig = await getBotConfigForPasteur(pasteurId);
+  return botConfig.checkinQuestions;
+}
+
 async function handleCheckinResponse(userRef, userData, message) {
+  const checkinQuestions = await getCheckinQuestionsForUser(userRef);
   const checkinState = userData.activeCheckin;
 
   if (!checkinState || !checkinState.active || !checkinState.date) {
@@ -33,7 +64,7 @@ async function handleCheckinResponse(userRef, userData, message) {
   const normalizedMessage = (message || "").trim();
 
   if (!normalizedMessage) {
-    return checkinQuestions[Math.max(0, currentStep - 1)];
+    return checkinQuestions[Math.max(0, currentStep - 1)] || defaultCheckinQuestions[Math.max(0, currentStep - 1)];
   }
 
   if (currentStep === 1) {
@@ -57,7 +88,7 @@ async function handleCheckinResponse(userRef, userData, message) {
       { merge: true }
     );
 
-    return checkinQuestions[1];
+    return checkinQuestions[1] || defaultCheckinQuestions[1];
   }
 
   if (currentStep === 2) {
@@ -87,7 +118,7 @@ async function handleCheckinResponse(userRef, userData, message) {
       { merge: true }
     );
 
-    return checkinQuestions[2];
+    return checkinQuestions[2] || defaultCheckinQuestions[2];
   }
 
   await checkinDocRef.set(
@@ -114,88 +145,110 @@ async function handleCheckinResponse(userRef, userData, message) {
 }
 
 async function startDailyCheckinForAllUsers() {
-  const usersSnapshot = await db
-    .collection("users")
-    .where("onboardingComplete", "==", true)
-    .get();
-
+  const pasteursSnapshot = await db.collection("pasteurs").get();
   const today = dayjs().format("YYYY-MM-DD");
   const tasks = [];
+  let totalUsers = 0;
 
-  usersSnapshot.forEach((userDoc) => {
-    const phoneNumber = userDoc.id;
-    const userRef = db.collection("users").doc(phoneNumber);
+  for (const pasteurDoc of pasteursSnapshot.docs) {
+    const pasteurId = pasteurDoc.id;
+    const botConfig = await getBotConfigForPasteur(pasteurId);
+    const openingQuestion = botConfig.checkinQuestions[0] || defaultCheckinQuestions[0];
 
-    tasks.push(
-      userRef.set(
-        {
-          activeCheckin: {
-            active: true,
-            date: today,
-            step: 1
-          }
-        },
-        { merge: true }
-      )
-    );
-
-    tasks.push(sendWhatsAppMessage(phoneNumber, checkinQuestions[0]));
-  });
-
-  await Promise.all(tasks);
-  return usersSnapshot.size;
-}
-
-async function sendWeeklySummaryToPastor() {
-  const usersSnapshot = await db
-    .collection("users")
-    .where("onboardingComplete", "==", true)
-    .get();
-
-  const startOfWeek = dayjs().startOf("week");
-  const endOfWeek = dayjs().endOf("week");
-
-  const summaryLines = [
-    `Resume hebdomadaire (${startOfWeek.format("DD/MM")} - ${endOfWeek.format("DD/MM")})`
-  ];
-
-  for (const userDoc of usersSnapshot.docs) {
-    const userData = userDoc.data();
-    const phoneNumber = userDoc.id;
-
-    const checkinsSnapshot = await db
-      .collection("users")
-      .doc(phoneNumber)
-      .collection("checkins")
-      .where("createdAt", ">=", startOfWeek.toDate())
-      .where("createdAt", "<=", endOfWeek.toDate())
-      .orderBy("createdAt", "asc")
+    const usersSnapshot = await db
+      .collection("pasteurs")
+      .doc(pasteurId)
+      .collection("disciples")
+      .where("onboardingComplete", "==", true)
       .get();
 
-    summaryLines.push("------------------------");
-    summaryLines.push(`Nom: ${userData.name || "Inconnu"}`);
-    summaryLines.push(`Numero: ${phoneNumber}`);
+    totalUsers += usersSnapshot.size;
 
-    if (checkinsSnapshot.empty) {
-      summaryLines.push("Aucun check-in cette semaine.");
-      continue;
-    }
+    usersSnapshot.forEach((userDoc) => {
+      const phoneNumber = userDoc.id;
+      const userRef = userDoc.ref;
 
-    checkinsSnapshot.forEach((checkinDoc) => {
-      const checkinData = checkinDoc.data();
-      summaryLines.push(`Date: ${checkinDoc.id}`);
-      summaryLines.push(`- Journee: ${checkinData.dayFeeling || "-"}`);
-      summaryLines.push(
-        `- A prie: ${typeof checkinData.prayed === "boolean" ? (checkinData.prayed ? "oui" : "non") : "-"}`
+      tasks.push(
+        userRef.set(
+          {
+            activeCheckin: {
+              active: true,
+              date: today,
+              step: 1
+            }
+          },
+          { merge: true }
+        )
       );
-      summaryLines.push(`- Verset/Pensee: ${checkinData.verse || "-"}`);
+
+      tasks.push(sendWhatsAppMessage(phoneNumber, openingQuestion));
     });
   }
 
-  const summaryMessage = summaryLines.join("\n");
-  await sendWhatsAppMessage(config.twilio.pastorNumber, summaryMessage);
+  await Promise.all(tasks);
+  return totalUsers;
+}
 
-  return usersSnapshot.size;
+async function sendWeeklySummaryToPastor() {
+  const pasteursSnapshot = await db.collection("pasteurs").get();
+  const startOfWeek = dayjs().startOf("week");
+  const endOfWeek = dayjs().endOf("week");
+  let totalUsers = 0;
+
+  for (const pasteurDoc of pasteursSnapshot.docs) {
+    const pasteurId = pasteurDoc.id;
+    const botConfig = await getBotConfigForPasteur(pasteurId);
+    const usersSnapshot = await db
+      .collection("pasteurs")
+      .doc(pasteurId)
+      .collection("disciples")
+      .where("onboardingComplete", "==", true)
+      .get();
+
+    totalUsers += usersSnapshot.size;
+
+    const summaryLines = [
+      `Resume hebdomadaire (${startOfWeek.format("DD/MM")} - ${endOfWeek.format("DD/MM")})`
+    ];
+
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      const phoneNumber = userDoc.id;
+
+      const checkinsSnapshot = await userDoc.ref
+        .collection("checkins")
+        .where("createdAt", ">=", startOfWeek.toDate())
+        .where("createdAt", "<=", endOfWeek.toDate())
+        .orderBy("createdAt", "asc")
+        .get();
+
+      summaryLines.push("------------------------");
+      summaryLines.push(`Nom: ${userData.name || "Inconnu"}`);
+      summaryLines.push(`Numero: ${phoneNumber}`);
+
+      if (checkinsSnapshot.empty) {
+        summaryLines.push("Aucun check-in cette semaine.");
+        continue;
+      }
+
+      checkinsSnapshot.forEach((checkinDoc) => {
+        const checkinData = checkinDoc.data();
+        summaryLines.push(`Date: ${checkinDoc.id}`);
+        summaryLines.push(`- Journee: ${checkinData.dayFeeling || "-"}`);
+        summaryLines.push(
+          `- A prie: ${typeof checkinData.prayed === "boolean" ? (checkinData.prayed ? "oui" : "non") : "-"}`
+        );
+        summaryLines.push(`- Verset/Pensee: ${checkinData.verse || "-"}`);
+      });
+    }
+
+    const summaryMessage = summaryLines.join("\n");
+    if (botConfig.pastorPhone) {
+      await sendWhatsAppMessage(botConfig.pastorPhone, summaryMessage);
+    }
+  }
+
+  return totalUsers;
 }
 
 module.exports = {

@@ -20,6 +20,7 @@ import {
 import api, { getErrorMessage } from "../api/client";
 import Layout from "../components/Layout";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import StatCard from "../components/StatCard";
 import ManualCheckinModal from "../components/ManualCheckinModal";
 import { formatCountryWithFlag } from "../utils/countries";
@@ -59,6 +60,7 @@ function formatDateTime(value) {
 
 function OverviewPage({ onLogout }) {
   const { theme } = useTheme();
+  const { profile, user } = useAuth();
   const [stats, setStats] = useState(null);
   const [disciples, setDisciples] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -90,9 +92,17 @@ function OverviewPage({ onLogout }) {
 
   const silentList = useMemo(() => stats?.silentDisciples || [], [stats]);
   const recentResponses = useMemo(() => stats?.recentResponses || [], [stats]);
+  const firstName = profile?.firstName || profile?.displayName?.split(" ")[0] || user?.displayName?.split(" ")[0] || "Pasteur";
+  const greetingTitle = `Bonjour, ${firstName} 👋`;
+  const greetingSubtitle = new Date().toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
 
   return (
-    <Layout title="Vue d'ensemble" onLogout={onLogout}>
+    <Layout title={greetingTitle} subtitle={greetingSubtitle} onLogout={onLogout}>
       {loading ? <p className="py-10 text-theme-muted">Chargement...</p> : null}
       {error ? <p className="py-10 text-red-500">{error}</p> : null}
 

@@ -1,26 +1,26 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { getErrorMessage } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
-function LoginPage() {
+function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { theme, toggleTheme } = useTheme();
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [success, setSuccess] = useState("");
+  const { forgotPassword } = useAuth();
+  const { theme } = useTheme();
 
   async function handleSubmit(event) {
     event.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
 
     try {
-      await login(email.trim(), password);
-      navigate("/", { replace: true });
+      await forgotPassword(email.trim());
+      setSuccess("Email de reinitialisation envoye.");
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -31,19 +31,12 @@ function LoginPage() {
   return (
     <div className={theme}>
       <div className="flex min-h-screen items-center justify-center bg-theme-bg px-4">
-        <button
-          onClick={toggleTheme}
-          className="absolute right-4 top-4 rounded-lg border border-theme-border px-3 py-2 text-sm text-theme-text2"
-        >
-          {theme === "light" ? "Dark" : "Light"}
-        </button>
-
         <form
           onSubmit={handleSubmit}
           className="w-full max-w-md rounded-xl border border-theme-border bg-theme-surface p-6 shadow-lg"
         >
-          <h1 className="mb-2 text-2xl font-semibold text-theme-text1">DiscipLink</h1>
-          <p className="mb-4 text-sm text-theme-text2">Connecte-toi avec ton compte pasteur</p>
+          <h1 className="mb-2 text-2xl font-semibold text-theme-text1">Mot de passe oublie</h1>
+          <p className="mb-4 text-sm text-theme-text2">Entre ton email pour recevoir un lien.</p>
 
           <input
             type="email"
@@ -54,34 +47,26 @@ function LoginPage() {
             required
           />
 
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mb-2 w-full rounded-lg border border-theme-border bg-transparent px-3 py-2 text-theme-text1"
-            placeholder="Mot de passe"
-            required
-          />
-
-          <div className="mb-3 text-right">
-            <Link to="/forgot-password" className="text-sm text-brand-600 hover:underline">
-              Mot de passe oublie ?
-            </Link>
-          </div>
-
           {error ? <p className="mb-3 text-sm text-red-500">{error}</p> : null}
+          {success ? <p className="mb-3 text-sm text-emerald-500">{success}</p> : null}
 
           <button
             disabled={loading}
             className="w-full rounded-lg bg-brand-600 px-4 py-2 font-medium text-white disabled:opacity-60"
             type="submit"
           >
-            {loading ? "Connexion..." : "Se connecter"}
+            {loading ? "Envoi..." : "Envoyer le lien"}
           </button>
+
+          <p className="mt-3 text-center text-sm text-theme-text2">
+            <Link to="/login" className="text-brand-600 hover:underline">
+              Retour a la connexion
+            </Link>
+          </p>
         </form>
       </div>
     </div>
   );
 }
 
-export default LoginPage;
+export default ForgotPasswordPage;

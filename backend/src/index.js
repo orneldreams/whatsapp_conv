@@ -2,7 +2,7 @@ const express = require("express");
 const twilio = require("twilio");
 const config = require("./config");
 const dashboardRoutes = require("./routes/dashboard");
-const { dashboardAuth } = require("./middleware/dashboardAuth");
+const { firebaseAuth } = require("./middleware/firebaseAuth");
 const { db, admin } = require("./services/firebase");
 const { sendWhatsAppMessage } = require("./services/twilio");
 const { startOnboarding, handleOnboardingResponse } = require("./handlers/onboarding");
@@ -22,7 +22,7 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-dashboard-password");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
     return res.status(204).send();
@@ -62,7 +62,7 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-app.use("/api", dashboardAuth, dashboardRoutes);
+app.use("/api", firebaseAuth, dashboardRoutes);
 
 app.post("/webhook/twilio", verifyTwilioSignature, async (req, res) => {
   const from = req.body.From;
@@ -73,7 +73,18 @@ app.post("/webhook/twilio", verifyTwilioSignature, async (req, res) => {
   }
 
   try {
-    const userRef = db.collection("users").doc(from);
+    const normalizedPhone = String(from || "").trim();
+    const discipleQuery = await db
+      .collectionGroup("disciples")
+      .where(admin.firestore.FieldPath.documentId(), "==", normalizedPhone)
+      .limit(1)
+      .get();
+
+    const defaultPasteurId = "unassigned";
+    const userRef = discipleQuery.empty
+      ? db.collection("pasteurs").doc(defaultPasteurId).collection("disciples").doc(normalizedPhone)
+      : discipleQuery.docs[0].ref;
+
     const userSnap = await userRef.get();
 
     let reply;
@@ -92,12 +103,14 @@ app.post("/webhook/twilio", verifyTwilioSignature, async (req, res) => {
 
     await userRef.set(
       {
+        phoneNumber: normalizedPhone,
+        phone: normalizedPhone,
         lastContact: admin.firestore.FieldValue.serverTimestamp()
       },
       { merge: true }
     );
 
-    await sendWhatsAppMessage(from, reply);
+    await sendWhatsAppMessage(normalizedPhone, reply);
     return res.status(200).send("OK");
   } catch (error) {
     console.error("[webhook] Erreur traitement message:", error);

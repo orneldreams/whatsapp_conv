@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "worker": "node src/jobs/worker.js",
-    "scheduler": "node src/jobs/scheduler.js"
+    "scheduler": "node src/jobs/scheduler.js",
+    "migrate:users": "node src/jobs/migrateUsersToPasteurs.js"
   },
   "dependencies": {
     "bullmq": "^5.7.8",
