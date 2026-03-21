@@ -14,8 +14,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.set("trust proxy", true);
 
+const allowedOrigins = config.corsOrigin.split(",").map((o) => o.trim());
+
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", config.corsOrigin);
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-dashboard-password");
 
