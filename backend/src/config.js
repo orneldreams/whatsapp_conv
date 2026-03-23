@@ -2,6 +2,17 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+function normalizeMultilineSecret(value) {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = String(value).trim();
+  const withoutWrappingQuotes = trimmed.replace(/^"([\s\S]*)"$/, "$1");
+
+  return withoutWrappingQuotes.replace(/\\n/g, "\n");
+}
+
 const config = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 3000),
@@ -17,9 +28,7 @@ const config = {
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY
-      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
-      : undefined
+    privateKey: normalizeMultilineSecret(process.env.FIREBASE_PRIVATE_KEY)
   },
   redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
   schedule: {
