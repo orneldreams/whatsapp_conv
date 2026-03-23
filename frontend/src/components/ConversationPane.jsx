@@ -1052,48 +1052,42 @@ function ConversationPane({
   return (
     <div className={`chat-container relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border ${className}`} style={frameStyle}>
       {showHeader ? (
-        <div className="sticky top-0 z-10 flex flex-col gap-2 border-b px-3 py-3 sm:gap-0 sm:px-4" style={headerStyle}>
-          {/* Ligne 1: Info du disciple + statut */}
-          <div className="flex min-w-0 items-start justify-between gap-3 sm:items-center">
-            <div className="flex min-w-0 items-center gap-2">
-              {onBack ? (
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1 md:hidden"
-                  aria-label="Retour aux conversations"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-              ) : null}
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3 py-3 sm:gap-3 sm:px-4" style={headerStyle}>
+          {/* Info du disciple + statut */}
+          <div className="flex min-w-0 items-center gap-2">
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1 md:hidden"
+                aria-label="Retour aux conversations"
+              >
+                <ChevronLeft size={16} />
+              </button>
+            ) : null}
 
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-theme-text1">{disciple?.name || "Disciple"}</p>
-                  {disciple?.waitingForPastor ? (
-                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
-                      En attente
-                    </span>
-                  ) : null}
-                </div>
-                <p className="truncate text-xs text-theme-text2">{disciple?.displayPhone || disciple?.phoneNumber || discipleId || ""}</p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-theme-text1">{disciple?.name || "Disciple"}</p>
+                {disciple?.waitingForPastor ? (
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                    En attente
+                  </span>
+                ) : null}
               </div>
-            </div>
-
-            {/* Statut discret */}
-            <div className="relative shrink-0 group">
-              <span
-                className={`inline-flex h-2 w-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-slate-400"}`}
-                title={isOnline ? "En ligne" : "Hors ligne"}
-              />
-              <span className="absolute right-0 top-full mt-1 hidden rounded-md bg-theme-bg px-2 py-1 text-[10px] text-theme-text2 whitespace-nowrap group-hover:block">
-                {isOnline ? "En ligne" : "Hors ligne"}
-              </span>
+              <p className="truncate text-xs text-theme-text2">
+                <span className="sm:hidden">
+                  {(disciple?.displayPhone || disciple?.phoneNumber || discipleId || "").slice(0, 5)}...
+                </span>
+                <span className="hidden sm:inline">
+                  {disciple?.displayPhone || disciple?.phoneNumber || discipleId || ""}
+                </span>
+              </p>
             </div>
           </div>
 
-          {/* Ligne 2: Boutons d'actions */}
-          <div className="flex flex-wrap items-center justify-end gap-1.5 sm:justify-end sm:gap-2">
+          {/* Boutons d'actions + statut */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => setSearchOpen((prev) => !prev)}
@@ -1139,6 +1133,17 @@ function ConversationPane({
             >
               <UserRound size={15} />
             </button>
+
+            {/* Statut discret */}
+            <div className="relative ml-1 shrink-0 group">
+              <span
+                className={`inline-flex h-2 w-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-slate-400"}`}
+                title={isOnline ? "En ligne" : "Hors ligne"}
+              />
+              <span className="absolute right-0 top-full mt-1 hidden rounded-md bg-theme-bg px-2 py-1 text-[10px] text-theme-text2 whitespace-nowrap group-hover:block">
+                {isOnline ? "En ligne" : "Hors ligne"}
+              </span>
+            </div>
           </div>
         </div>
       ) : null}
