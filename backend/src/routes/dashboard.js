@@ -1022,6 +1022,11 @@ router.get("/checkins", async (req, res) => {
         return {
           discipleId: userDoc.id,
           name: userData.name || "Inconnu",
+          phone: userData.phone || userDoc.id,
+          displayPhone: String(userData.phone || userDoc.id || "").replace(/^whatsapp:/i, ""),
+          waitingForPastor: Boolean(userData.waitingForPastor),
+          lastInboundAt: toIso(userData.lastInboundAt),
+          lastContact: toIso(userData.lastContact),
           status: checkinDoc.exists ? "repondu" : "pas_repondu",
           checkin: checkinDoc.exists
             ? {
@@ -1062,6 +1067,76 @@ router.get("/checkins/:discipleId", async (req, res) => {
     });
 
     return res.json({ discipleId, items });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/checkins/remind-pending", async (req, res) => {
+  try {
+    const targetDate = String(req.body?.date || dayjs().format("YYYY-MM-DD")).trim();
+    const customMessage = String(req.body?.message || "").trim();
+    const usersSnapshot = await getDisciplesCollection(req).get();
+    const botConfig = await getBotConfig(req);
+    const defaultReminder = String(botConfig?.checkinQuestions?.[0] || "").trim()
+      || "Petit rappel fraternel: prends 1 minute pour répondre au check-in du jour 🙏";
+
+    const pendingUsers = [];
+    for (const userDoc of usersSnapshot.docs) {
+      const checkinDoc = await userDoc.ref.collection("checkins").doc(targetDate).get();
+      if (!checkinDoc.exists) {
+        pendingUsers.push(userDoc);
+      }
+    }
+
+    if (pendingUsers.length === 0) {
+      return res.json({
+        success: true,
+        date: targetDate,
+        totalPending: 0,
+        sent: 0,
+        failed: 0,
+        failures: []
+      });
+    }
+
+    let sent = 0;
+    let failed = 0;
+    const failures = [];
+
+    for (const userDoc of pendingUsers) {
+      const discipleId = userDoc.id;
+      const userData = userDoc.data() || {};
+      const reminderText = applyConversationVariables(customMessage || defaultReminder, userData, req);
+
+      try {
+        await sendWithTyping(userDoc.ref, discipleId, reminderText, "checkin-reminder");
+        await userDoc.ref.set(
+          {
+            waitingForPastor: false,
+            lastContact: admin.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        );
+        sent += 1;
+      } catch (error) {
+        failed += 1;
+        failures.push({
+          discipleId,
+          name: String(userData.name || "Inconnu"),
+          message: error?.message || "Échec envoi"
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      date: targetDate,
+      totalPending: pendingUsers.length,
+      sent,
+      failed,
+      failures
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

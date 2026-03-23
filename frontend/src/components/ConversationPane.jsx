@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronDown,
@@ -228,6 +228,33 @@ function matchesMessageSearch(message, queryText) {
   return haystack.includes(queryText);
 }
 
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function renderHighlightedText(content, searchQuery) {
+  const text = String(content || "");
+  const query = String(searchQuery || "").trim();
+  if (!query) {
+    return text;
+  }
+
+  const regex = new RegExp(`(${escapeRegExp(query)})`, "ig");
+  const parts = text.split(regex);
+
+  return parts.map((part, index) => {
+    if (part.toLowerCase() === query.toLowerCase()) {
+      return (
+        <mark key={`${part}-${index}`} className="rounded bg-yellow-300/60 px-0.5 text-inherit">
+          {part}
+        </mark>
+      );
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
+
 function groupMessagesByDate(messages) {
   const groups = [];
   let lastKey = "";
@@ -344,6 +371,8 @@ function ConversationPane({
   const fileInputRef = useRef(null);
   const emojiRef = useRef(null);
   const contextMenuRef = useRef(null);
+  const swipeStateRef = useRef({});
+  const unreadAutoJumpDoneRef = useRef(false);
 
   const phoneNumber = useMemo(
     () => ensureWhatsappDocId(disciple?.phoneNumber || disciple?.id || disciple?.discipleId || ""),
@@ -361,11 +390,44 @@ function ConversationPane({
     () => mergeMessages(olderMessages, recentMessages),
     [olderMessages, recentMessages]
   );
-  const normalizedSearch = useMemo(() => normalizeSearchText(search), [search]);
+  const deferredSearch = useDeferredValue(search);
+  const normalizedSearch = useMemo(() => normalizeSearchText(deferredSearch), [deferredSearch]);
   const filteredMessages = useMemo(
     () => (normalizedSearch ? allMessages.filter((message) => matchesMessageSearch(message, normalizedSearch)) : allMessages),
     [allMessages, normalizedSearch]
   );
+  const unreadDiscipleMessages = useMemo(
+    () => allMessages.filter((item) => item.sender === "disciple" && item.read === false),
+    [allMessages]
+  );
+  const outgoingQueueSummary = useMemo(() => {
+    return allMessages
+      .filter((message) => message.sender === "pastor" && message.type !== "typing")
+      .reduce((acc, message) => {
+        const status = String(message.deliveryStatus || "sent").toLowerCase();
+        if (["sending", "queued", "accepted"].includes(status)) {
+          acc.pending += 1;
+        } else if (status === "failed") {
+          acc.failed += 1;
+        } else {
+          acc.sent += 1;
+        }
+        return acc;
+      }, { pending: 0, sent: 0, failed: 0 });
+  }, [allMessages]);
+  const failedStreakCount = useMemo(() => {
+    const outgoing = allMessages.filter((message) => message.sender === "pastor" && message.type !== "typing");
+    let streak = 0;
+    for (let i = outgoing.length - 1; i >= 0; i -= 1) {
+      const status = String(outgoing[i].deliveryStatus || "").toLowerCase();
+      if (status === "failed") {
+        streak += 1;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }, [allMessages]);
   const grouped = useMemo(() => groupMessagesByDate(filteredMessages), [filteredMessages]);
   const pinnedMessages = useMemo(
     () => allMessages.filter((message) => message.pinned && isActiveUntil(message.pinnedUntil) && message.type !== "typing")
@@ -559,6 +621,24 @@ function ConversationPane({
   }, [discipleId]);
 
   useEffect(() => {
+    unreadAutoJumpDoneRef.current = false;
+  }, [discipleId]);
+
+  useEffect(() => {
+    if (loadingInitial || unreadAutoJumpDoneRef.current || unreadDiscipleMessages.length === 0) {
+      return;
+    }
+
+    const lastUnread = unreadDiscipleMessages[unreadDiscipleMessages.length - 1];
+    if (!lastUnread?.id) {
+      return;
+    }
+
+    scrollToMessage(lastUnread.id);
+    unreadAutoJumpDoneRef.current = true;
+  }, [loadingInitial, unreadDiscipleMessages]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [recentMessages.length]);
 
@@ -567,7 +647,6 @@ function ConversationPane({
       return;
     }
 
-    const unreadDiscipleMessages = allMessages.filter((item) => item.sender === "disciple" && item.read === false);
     if (unreadDiscipleMessages.length === 0 || markingRead) {
       return;
     }
@@ -620,7 +699,7 @@ function ConversationPane({
     }
 
     markConversationRead();
-  }, [allMessages, discipleId, markingRead, onDiscipleUpdate, onReadMessages, pasteurId, phoneNumber, snapshotUnavailable]);
+  }, [discipleId, markingRead, onDiscipleUpdate, onReadMessages, pasteurId, phoneNumber, snapshotUnavailable, unreadDiscipleMessages]);
 
   useEffect(() => {
     if (!emojiOpen) return undefined;
@@ -797,6 +876,47 @@ function ConversationPane({
     window.setTimeout(() => {
       setFocusedMessageId((prev) => (prev === targetId ? "" : prev));
     }, 1400);
+  }
+
+  function handleMessageTouchStart(messageId, event) {
+    const touch = event.changedTouches?.[0];
+    if (!touch) {
+      return;
+    }
+
+    swipeStateRef.current[messageId] = {
+      x: touch.clientX,
+      y: touch.clientY,
+      at: Date.now()
+    };
+  }
+
+  function handleMessageTouchEnd(message, event) {
+    const touch = event.changedTouches?.[0];
+    const start = swipeStateRef.current[message?.id];
+    delete swipeStateRef.current[message?.id];
+
+    if (!touch || !start || !message?.id) {
+      return;
+    }
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = Math.abs(touch.clientY - start.y);
+    if (deltaY > 28 || Math.abs(deltaX) < 64) {
+      return;
+    }
+
+    if (deltaX > 0) {
+      setReplyTo(message);
+      return;
+    }
+
+    if (Boolean(message.pinned) && isActiveUntil(message.pinnedUntil)) {
+      handleTogglePin(message, 0);
+      return;
+    }
+
+    openPinDurationPicker({ type: "message", message });
   }
 
   async function handleConversationPinToggle(selectedDurationMinutes = 0) {
@@ -1153,6 +1273,28 @@ function ConversationPane({
         </div>
       ) : null}
 
+      {(outgoingQueueSummary.pending > 0 || outgoingQueueSummary.sent > 0 || outgoingQueueSummary.failed > 0 || failedStreakCount >= 3) ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-theme-border px-3 py-2 text-[11px] sm:px-4" style={headerStyle}>
+          <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-sky-400">En attente: {outgoingQueueSummary.pending}</span>
+          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-400">Envoyé: {outgoingQueueSummary.sent}</span>
+          <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">Échec: {outgoingQueueSummary.failed}</span>
+          {failedStreakCount >= 3 ? (
+            <span className="rounded-full bg-red-500/20 px-2 py-0.5 font-semibold text-red-300">
+              Alerte: {failedStreakCount} échecs consécutifs
+            </span>
+          ) : null}
+          {unreadDiscipleMessages.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => scrollToMessage(unreadDiscipleMessages[unreadDiscipleMessages.length - 1]?.id)}
+              className="rounded-full border border-theme-border px-2 py-0.5 text-theme-text2 hover:text-theme-text1"
+            >
+              Aller au dernier non lu ({unreadDiscipleMessages.length})
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       {conversationPinnedActive ? (
         <div className="border-b border-theme-border px-4 py-1.5 text-[11px] text-amber-500" style={headerStyle}>
           <span className="inline-flex items-center gap-1">
@@ -1332,6 +1474,8 @@ function ConversationPane({
                           ? pastorBubbleStyle
                           : discipleBubbleStyle
                       }
+                      onTouchStart={(event) => handleMessageTouchStart(message.id, event)}
+                      onTouchEnd={(event) => handleMessageTouchEnd(message, event)}
                       onContextMenu={(event) => {
                         event.preventDefault();
                         setContextMenu({ x: event.clientX, y: event.clientY, message });
@@ -1348,11 +1492,11 @@ function ConversationPane({
                           <p className={`mb-0.5 truncate font-semibold ${isPastor ? "text-white/70" : "text-[#6C3FE8]"}`}>
                             {message.replyTo.sender === "pastor" ? "Vous" : normalizeFirstName(disciple?.name) || "Disciple"}
                           </p>
-                          <p className="truncate opacity-80">{message.replyTo.content}</p>
+                          <p className="truncate opacity-80">{renderHighlightedText(message.replyTo.content, search)}</p>
                         </div>
                       ) : null}
 
-                      <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                      <p className="whitespace-pre-wrap break-words">{renderHighlightedText(message.content, search)}</p>
 
                       {Array.isArray(message.mediaUrl) && message.mediaUrl.length > 0 ? (
                         <div className={`mt-2 rounded-lg border px-2 py-1.5 text-xs ${isPastor ? "border-white/25 bg-white/10" : "border-theme-border bg-theme-bg"}`}>

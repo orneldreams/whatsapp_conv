@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, MessageSquarePlus, Timer } from "lucide-react";
+import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, MessageSquarePlus, Timer } from "lucide-react";
 import api, { getErrorMessage } from "../api/client";
 import Layout from "../components/Layout";
 import SingleDiscipleCheckinModal from "../components/SingleDiscipleCheckinModal";
@@ -88,6 +88,20 @@ function getCalendarDays(monthDate) {
   return days;
 }
 
+function computePriorityScore(item) {
+  const now = Date.now();
+  const lastInboundAt = item?.lastInboundAt ? new Date(item.lastInboundAt).getTime() : 0;
+  const lastContact = item?.lastContact ? new Date(item.lastContact).getTime() : 0;
+  const reference = Number.isFinite(lastInboundAt) && lastInboundAt > 0 ? lastInboundAt : lastContact;
+  const silenceHours = reference > 0 ? Math.max(0, Math.floor((now - reference) / (1000 * 60 * 60))) : 999;
+
+  let score = 0;
+  if (item?.status !== "repondu") score += 60;
+  score += Math.min(30, Math.floor(silenceHours / 6));
+  if (item?.waitingForPastor) score += 10;
+  return score;
+}
+
 function SuiviPage({ onLogout }) {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -106,6 +120,8 @@ function SuiviPage({ onLogout }) {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [showCheckinModal, setShowCheckinModal] = useState(false);
+  const [bulkReminding, setBulkReminding] = useState(false);
+  const [bulkSummary, setBulkSummary] = useState(null);
   const datePickerRef = useRef(null);
   const calendarPanelRef = useRef(null);
   const closeTimerRef = useRef(null);
@@ -139,6 +155,13 @@ function SuiviPage({ onLogout }) {
     () => items.filter((item) => item.status !== "repondu"),
     [items]
   );
+
+  const priorityItems = useMemo(() => {
+    return [...pendingItems]
+      .map((item) => ({ ...item, priorityScore: computePriorityScore(item) }))
+      .sort((left, right) => right.priorityScore - left.priorityScore)
+      .slice(0, 5);
+  }, [pendingItems]);
 
   const sevenDayRows = useMemo(() => {
     if (!selectedDiscipleId) return [];
@@ -203,6 +226,23 @@ function SuiviPage({ onLogout }) {
       setError(getErrorMessage(err));
     } finally {
       setHistoryLoading(false);
+    }
+  }
+
+  async function handleRemindPending() {
+    if (bulkReminding) return;
+    setBulkReminding(true);
+    setBulkSummary(null);
+    setError("");
+
+    try {
+      const res = await api.post("/api/checkins/remind-pending", { date });
+      setBulkSummary(res.data || null);
+      await fetchByDate(date);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBulkReminding(false);
     }
   }
 
@@ -453,7 +493,23 @@ function SuiviPage({ onLogout }) {
                 />
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleRemindPending}
+              disabled={bulkReminding || pendingItems.length === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#6C3FE8] px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <MessageSquarePlus size={16} />
+              {bulkReminding ? "Relance..." : `Relancer les ${pendingItems.length} non-répondants`}
+            </button>
           </div>
+
+          {bulkSummary ? (
+            <div className="mt-3 rounded-lg border border-theme-border px-3 py-2 text-xs text-theme-text1">
+              Relance terminée: {bulkSummary.sent || 0} envoyés, {bulkSummary.failed || 0} échecs.
+            </div>
+          ) : null}
         </section>
 
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
@@ -501,6 +557,49 @@ function SuiviPage({ onLogout }) {
               ))}
             </div>
           ) : null}
+        </section>
+
+        <section className="rounded-xl border p-3" style={panelStyle}>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-theme-text1">Priorité du jour</p>
+            <span className="text-xs text-theme-muted">Top {priorityItems.length}</span>
+          </div>
+
+          {priorityItems.length === 0 ? (
+            <p className="text-sm text-theme-muted">Aucune priorité: tout le monde a répondu.</p>
+          ) : (
+            <div className="space-y-2">
+              {priorityItems.map((item, index) => (
+                <div
+                  key={`priority-${item.discipleId}`}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-theme-border px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-theme-text1">
+                      {index + 1}. {item.name}
+                    </p>
+                    <p className="truncate text-xs text-theme-muted">{item.displayPhone || item.discipleId}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-1 text-[11px] font-medium text-amber-500">
+                      <AlertTriangle size={12} /> Score {item.priorityScore}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDiscipleId(item.discipleId);
+                        setShowCheckinModal(true);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg bg-[#6C3FE8] px-3 py-1.5 text-xs font-medium text-white"
+                    >
+                      Relancer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="hidden min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border md:grid" style={panelStyle}>
