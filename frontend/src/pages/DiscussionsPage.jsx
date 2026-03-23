@@ -105,8 +105,13 @@ function DiscussionsPage({ onLogout }) {
   }, []);
 
   useEffect(() => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
+
     fetchDiscussions();
-  }, [fetchDiscussions]);
+  }, [fetchDiscussions, user?.uid]);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -324,9 +329,9 @@ function DiscussionsPage({ onLogout }) {
 
   return (
     <Layout title="Discussions" onLogout={onLogout}>
-      <div className="flex overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+      <div className="flex min-h-[calc(100dvh-5rem)] flex-col overflow-hidden md:h-[calc(100dvh-64px)] md:flex-row">
         <div
-          className={`flex min-w-0 flex-col border-r ${selectedDisciple ? "hidden md:flex md:w-[35%] md:min-w-[320px] md:flex-shrink-0" : "w-full md:w-[35%] md:min-w-[320px] md:flex-shrink-0"}`}
+          className={`flex min-w-0 flex-col ${selectedDisciple ? "hidden md:flex md:w-[35%] md:min-w-[320px] md:flex-shrink-0 md:border-r" : "w-full md:w-[35%] md:min-w-[320px] md:flex-shrink-0 md:border-r"}`}
           style={sidePanelStyle}
         >
           <div className="relative border-b px-4 py-4" style={{ borderColor: panelHeaderBorder }}>
@@ -384,7 +389,7 @@ function DiscussionsPage({ onLogout }) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-3 py-3">
+          <div className="flex-1 overflow-y-auto px-2 py-2 sm:px-3 sm:py-3">
             {loading ? (
               <p className="px-4 py-6 text-sm text-theme-text2">Chargement…</p>
             ) : error ? (
@@ -419,7 +424,7 @@ function DiscussionsPage({ onLogout }) {
                         : listCardBaseStyle.boxShadow
                     }}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       <button type="button" onClick={() => setSelected(discussion)} className="flex min-w-0 flex-1 items-start gap-3 text-left">
                         <div
                           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-[13px] font-extrabold shadow-sm"
@@ -429,8 +434,8 @@ function DiscussionsPage({ onLogout }) {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex min-w-0 items-center gap-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
                               <span className="truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                                 {discussion.name || discussion.phoneNumber}
                               </span>
@@ -486,7 +491,7 @@ function DiscussionsPage({ onLogout }) {
         </div>
 
         <div
-          className={`relative min-w-0 flex-1 flex-col overflow-hidden ${selectedDisciple ? "flex" : "hidden md:flex"}`}
+          className={`relative min-w-0 flex-1 flex-col overflow-hidden ${selectedDisciple ? "flex min-h-[55dvh]" : "hidden md:flex"}`}
           style={rightPaneStyle}
         >
           <div

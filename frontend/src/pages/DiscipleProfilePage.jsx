@@ -351,7 +351,7 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
 
   return (
     <div
-      className="absolute inset-0 z-30 flex items-center justify-center px-4 py-6"
+      className="fixed inset-0 z-30 overflow-y-auto px-3 py-3 sm:px-4 sm:py-6"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.55)" }}
     >
       <form
@@ -359,16 +359,16 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
           event.preventDefault();
           onSave(form);
         }}
-        className="w-full max-w-6xl overflow-hidden rounded-2xl border"
+        className="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl border"
         style={{
           ...modalStyle,
           borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD",
           color: theme === "dark" ? "#F0EEFF" : "#111827"
         }}
       >
-        <div className="grid lg:grid-cols-2">
+        <div className="grid xl:grid-cols-2">
           <div
-            className="space-y-4 p-5"
+            className="space-y-4 p-4 sm:p-5"
             style={{ backgroundColor: theme === "dark" ? "#1A1825" : "#FFFFFF", color: theme === "dark" ? "#F0EEFF" : "#111827" }}
           >
             <h3 className="text-lg font-semibold" style={{ color: theme === "dark" ? "#F0EEFF" : "#111827" }}>Modifier le profil</h3>
@@ -516,7 +516,7 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
           </div>
 
           <div
-            className="border-l p-5"
+            className="border-t p-4 sm:p-5 xl:border-l xl:border-t-0"
             style={{
               borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD",
               backgroundColor: theme === "dark" ? "#0F0E17" : "#F5F3FF",
@@ -546,31 +546,31 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
             </div>
 
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays d'origine</span>
                 {displayReadValue(form.originCountry ? formatCountryWithFlag(form.originCountry) : "")}
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays actuel</span>
                 {displayReadValue(form.currentCountry ? formatCountryWithFlag(form.currentCountry) : "")}
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Date conversion</span>
                 {displayReadValue(formatDateFr(form.conversionDate))}
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Début vie chrétienne</span>
                 {displayReadValue(formatDateFr(form.christianLifeStart))}
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Eglise</span>
                 {displayReadValue(form.church)}
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pasteur principal</span>
                 {displayReadValue(form.mainPastor)}
               </div>
-              <div className="flex justify-between gap-3">
+              <div className="flex flex-wrap justify-between gap-3">
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Faiseur de disciple</span>
                 <span>{form.discipleMaker ? "Oui" : "Non"}</span>
               </div>
@@ -579,7 +579,7 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
         </div>
 
         <div
-          className="flex justify-end gap-2 border-t px-5 py-4"
+          className="flex flex-col-reverse gap-2 border-t px-4 py-4 sm:flex-row sm:justify-end sm:px-5"
           style={{
             borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD",
             backgroundColor: theme === "dark" ? "#1A1825" : "#FFFFFF"
@@ -588,7 +588,7 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border px-4 py-2 text-sm font-medium"
+            className="w-full rounded-lg border px-4 py-2 text-sm font-medium sm:w-auto"
             style={{
               backgroundColor: theme === "dark" ? "transparent" : "#F5F3FF",
               border: theme === "dark" ? "1px solid #2D2A3E" : "2px solid #A78BFA",
@@ -600,7 +600,7 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
           <button
             type="submit"
             disabled={!canSave || saving}
-            className="rounded-lg px-4 py-2 text-sm font-medium"
+            className="w-full rounded-lg px-4 py-2 text-sm font-medium sm:w-auto"
             style={{
               backgroundColor: !canSave || saving ? (theme === "dark" ? "#9CA3AF" : "#C4B5FD") : "#6C3FE8",
               color: "#FFFFFF"

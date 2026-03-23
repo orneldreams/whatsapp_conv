@@ -79,6 +79,12 @@ function Layout({ title, subtitle = "", onLogout, children }) {
   }
 
   useEffect(() => {
+    if (!user?.uid) {
+      setHasUnreadConversations(false);
+      setUnreadDiscussions(0);
+      return undefined;
+    }
+
     let mounted = true;
 
     async function refreshUnread() {
@@ -97,7 +103,7 @@ function Layout({ title, subtitle = "", onLogout, children }) {
     }
 
     const unsubscribe = onSnapshot(
-      collection(firestore, "pasteurs", user?.uid || "", "disciples"),
+      collection(firestore, "pasteurs", user.uid, "disciples"),
       () => {
         refreshUnread();
       },
@@ -248,9 +254,9 @@ function Layout({ title, subtitle = "", onLogout, children }) {
           </button>
         </aside>
 
-        <header className="fixed left-0 right-0 top-0 z-10 border-b border-theme-border bg-theme-surface/95 px-4 py-3 backdrop-blur lg:left-60">
-          <div className="mx-auto flex max-w-7xl items-center justify-between">
-            <div className="flex items-center gap-2">
+        <header className="fixed left-0 right-0 top-0 z-10 border-b border-theme-border bg-theme-surface/95 px-3 py-3 backdrop-blur lg:left-60 lg:px-4">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <button
                 type="button"
                 onClick={() => setMobileNavOpen(true)}
@@ -260,22 +266,22 @@ function Layout({ title, subtitle = "", onLogout, children }) {
                 <Menu size={18} />
               </button>
 
-              <div>
-              <h2 className="flex items-center gap-2 text-xl font-semibold text-theme-text1">
-                {TitleIcon ? <TitleIcon size={20} className="text-[#6C3FE8]" /> : null}
+              <div className="min-w-0">
+              <h2 className="flex items-center gap-2 truncate text-base font-semibold text-theme-text1 sm:text-xl">
+                {TitleIcon ? <TitleIcon size={18} className="shrink-0 text-[#6C3FE8] sm:h-5 sm:w-5" /> : null}
                 {title}
               </h2>
-              {subtitle ? <p className="text-xs text-theme-text2">{subtitle}</p> : null}
+              {subtitle ? <p className="truncate text-xs text-theme-text2">{subtitle}</p> : null}
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={toggleTheme}
-                className="flex items-center gap-2 rounded-lg border border-theme-border px-3 py-2 text-sm text-theme-text2"
+                className="flex items-center gap-2 rounded-lg border border-theme-border px-2.5 py-2 text-sm text-theme-text2 sm:px-3"
               >
                 {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
-                {theme === "light" ? "Dark" : "Light"}
+                <span className="hidden sm:inline">{theme === "light" ? "Dark" : "Light"}</span>
               </button>
 
               <div className="relative">
@@ -286,7 +292,7 @@ function Layout({ title, subtitle = "", onLogout, children }) {
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold text-white">
                     {getInitials(displayName)}
                   </div>
-                  <ChevronDown size={16} className="text-theme-text2" />
+                  <ChevronDown size={16} className="hidden text-theme-text2 sm:block" />
                 </button>
 
                 {menuOpen ? (
@@ -319,7 +325,7 @@ function Layout({ title, subtitle = "", onLogout, children }) {
           </div>
         </header>
 
-        <main className="px-4 pb-6 pt-20 lg:ml-60 lg:px-6">
+        <main className="px-3 pb-4 pt-24 sm:px-4 sm:pb-6 sm:pt-20 lg:ml-60 lg:px-6">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>

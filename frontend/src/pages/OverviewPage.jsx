@@ -60,6 +60,11 @@ function OverviewPage({ onLogout }) {
   const [preselectedDiscipleId, setPreselectedDiscipleId] = useState("");
 
   useEffect(() => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
+
     async function fetchData() {
       setLoading(true);
       setError("");
@@ -79,7 +84,7 @@ function OverviewPage({ onLogout }) {
     }
 
     fetchData();
-  }, []);
+  }, [user?.uid]);
 
   const silentList = useMemo(() => stats?.silentDisciples || [], [stats]);
   const recentResponses = useMemo(() => stats?.recentResponses || [], [stats]);

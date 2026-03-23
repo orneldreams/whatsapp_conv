@@ -4,6 +4,7 @@ import api, { getErrorMessage } from "../api/client";
 import Layout from "../components/Layout";
 import SingleDiscipleCheckinModal from "../components/SingleDiscipleCheckinModal";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 const avatarColors = [
   { bg: "#4F46E5", text: "#fff" },
@@ -89,6 +90,7 @@ function getCalendarDays(monthDate) {
 
 function SuiviPage({ onLogout }) {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [items, setItems] = useState([]);
   const [selectedDiscipleId, setSelectedDiscipleId] = useState("");
@@ -177,8 +179,12 @@ function SuiviPage({ onLogout }) {
   }, [selectedDiscipleId]);
 
   useEffect(() => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
     fetchByDate(date);
-  }, [date, fetchByDate]);
+  }, [date, fetchByDate, user?.uid]);
 
   async function loadHistory(discipleId) {
     setSelectedDiscipleId(discipleId);

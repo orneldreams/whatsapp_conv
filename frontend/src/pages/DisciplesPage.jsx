@@ -394,17 +394,42 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
 
   return (
     <div
-      className="absolute inset-0 z-30 flex items-center justify-center px-4 py-6"
+      className="fixed inset-0 z-40 overflow-y-auto px-3 py-3 sm:px-4 sm:py-6"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.55)" }}
     >
       <form
         onSubmit={handleCreate}
-        className="w-full max-w-6xl overflow-hidden rounded-2xl"
+        className="mx-auto flex min-h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl"
         style={{ ...modalStyle, ...modalBorderStyle }}
       >
-        <div className="grid lg:grid-cols-2">
-          <div className="space-y-4 p-5" style={leftColumnStyle}>
-            <h3 className="text-lg font-semibold" style={{ color: theme === "dark" ? "#F0EEFF" : "#111827" }}>Ajouter un disciple</h3>
+        <div className="flex items-center justify-between gap-3 border-b px-4 py-4 sm:px-5"
+          style={{
+            ...leftColumnStyle,
+            borderBottom: theme === "dark" ? "1px solid #2D2A3E" : "1px solid #C4B5FD"
+          }}
+        >
+          <h3 className="text-base font-semibold sm:text-lg" style={{ color: theme === "dark" ? "#F0EEFF" : "#111827" }}>
+            Ajouter un disciple
+          </h3>
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              onClose();
+            }}
+            className="rounded-lg px-3 py-2 text-sm font-medium"
+            style={{
+              backgroundColor: theme === "dark" ? "#0F0E17" : "#F5F3FF",
+              border: theme === "dark" ? "1px solid #2D2A3E" : "1px solid #C4B5FD",
+              color: theme === "dark" ? "#E2E8F0" : "#4C1D95"
+            }}
+          >
+            Fermer
+          </button>
+        </div>
+
+        <div className="grid overflow-y-auto xl:grid-cols-2">
+          <div className="space-y-4 p-4 sm:p-5" style={leftColumnStyle}>
 
             <label className="block text-sm">
               <span className="mb-1 block" style={labelStyle}>Nom complet *</span>
@@ -516,7 +541,14 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
             {error ? <p className="text-sm" style={{ color: "#EF4444" }}>{error}</p> : null}
           </div>
 
-          <div className="border-l p-5" style={rightColumnStyle}>
+          <div
+            className="border-t p-4 sm:p-5 xl:border-l xl:border-t-0"
+            style={{
+              ...rightColumnStyle,
+              borderLeft: undefined,
+              borderTop: theme === "dark" ? "1px solid #2D2A3E" : "1px solid #C4B5FD"
+            }}
+          >
             <h4 className="mb-4 text-base font-semibold" style={{ color: theme === "dark" ? "#F0EEFF" : "#111827" }}>Apercu profil</h4>
 
             <div className="mb-5 flex items-center gap-3">
@@ -540,31 +572,31 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
             </div>
 
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays d'origine</span>
                 <span>{newDisciple.originCountry ? formatCountryWithFlag(newDisciple.originCountry) : "—"}</span>
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pays actuel</span>
                 <span>{newDisciple.currentCountry ? formatCountryWithFlag(newDisciple.currentCountry) : "—"}</span>
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Date conversion</span>
                 <span>{newDisciple.conversionDate ? formatDateFr(newDisciple.conversionDate) : "—"}</span>
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Début vie chrétienne</span>
                 <span>{newDisciple.christianLifeStart ? formatDateFr(newDisciple.christianLifeStart) : "—"}</span>
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Eglise</span>
                 <span>{newDisciple.church || "—"}</span>
               </div>
-              <div className="flex justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
+              <div className="flex flex-wrap justify-between gap-3 border-b pb-2" style={{ borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }}>
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Pasteur principal</span>
                 <span>{newDisciple.mainPastor || "—"}</span>
               </div>
-              <div className="flex justify-between gap-3">
+              <div className="flex flex-wrap justify-between gap-3">
                 <span style={{ color: theme === "dark" ? "#9CA3AF" : "#3730A3" }}>Faiseur de disciple</span>
                 <span>{newDisciple.discipleMaker ? "Oui" : "Non"}</span>
               </div>
@@ -572,14 +604,14 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-4" style={footerStyle}>
+        <div className="flex flex-col-reverse gap-2 px-4 py-4 sm:flex-row sm:justify-end sm:px-5" style={footerStyle}>
           <button
             type="button"
             onClick={() => {
               resetForm();
               onClose();
             }}
-            className="rounded-lg px-4 py-2 text-sm font-medium"
+            className="w-full rounded-lg px-4 py-2 text-sm font-medium sm:w-auto"
             style={{
               backgroundColor: theme === "dark" ? "transparent" : "#F5F3FF",
               border: theme === "dark" ? "1px solid #2D2A3E" : "2px solid #A78BFA",
@@ -592,7 +624,7 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
           <button
             type="submit"
             disabled={!canSave || creating}
-            className="rounded-lg px-4 py-2 text-sm font-medium"
+            className="w-full rounded-lg px-4 py-2 text-sm font-medium sm:w-auto"
             style={{
               backgroundColor: !canSave || creating ? (theme === "dark" ? "#2D2A3E" : "#C4B5FD") : "#6C3FE8",
               color: "#FFFFFF"
@@ -716,8 +748,12 @@ function DisciplesPage({ onLogout }) {
   }
 
   useEffect(() => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
     fetchDisciplesAndStats(page);
-  }, [page, search, statusFilter, countryFilter]);
+  }, [page, search, statusFilter, countryFilter, user?.uid]);
 
   useEffect(() => {
     if (!user?.uid) return undefined;

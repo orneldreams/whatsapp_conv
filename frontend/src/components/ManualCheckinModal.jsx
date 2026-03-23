@@ -258,8 +258,8 @@ function ManualCheckinModal({ isOpen, onClose, disciples = [], preselectedDiscip
       : { backgroundColor: "#FFFFFF", borderColor: "#E5E1FF" };
 
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-4xl rounded-xl border p-5 shadow-xl" style={panelStyle}>
+    <div className="fixed inset-0 z-40 overflow-y-auto bg-black/40 px-3 py-3 sm:px-4 sm:py-6">
+      <div className="mx-auto w-full max-w-4xl rounded-xl border p-4 shadow-xl sm:p-5" style={panelStyle}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-theme-text1">Check-in manuel</h3>
           <button

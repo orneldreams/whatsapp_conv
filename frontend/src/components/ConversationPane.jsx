@@ -1038,9 +1038,9 @@ function ConversationPane({
   return (
     <div className={`relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border ${className}`} style={frameStyle}>
       {showHeader ? (
-        <div className="flex items-center justify-between border-b px-4 py-3" style={headerStyle}>
-          <div>
-            <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4" style={headerStyle}>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-theme-text1">{disciple?.name || "Disciple"}</p>
               {disciple?.waitingForPastor ? (
                 <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
@@ -1048,9 +1048,9 @@ function ConversationPane({
                 </span>
               ) : null}
             </div>
-            <p className="text-xs text-theme-text2">{disciple?.displayPhone || disciple?.phoneNumber || discipleId || ""}</p>
+            <p className="truncate text-xs text-theme-text2">{disciple?.displayPhone || disciple?.phoneNumber || discipleId || ""}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <button
               type="button"
               onClick={() => setSearchOpen((prev) => !prev)}
@@ -1096,7 +1096,7 @@ function ConversationPane({
             >
               <Pin size={15} />
             </button>
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs ${isOnline ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-500/20 text-slate-400"}`}>
+            <span className={`order-last inline-flex w-full items-center justify-center gap-1 rounded-full px-2 py-1 text-xs sm:order-none sm:w-auto ${isOnline ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-500/20 text-slate-400"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-emerald-400" : "bg-slate-400"}`} />
               {isOnline ? "En ligne" : "Hors ligne"}
             </span>
@@ -1113,18 +1113,18 @@ function ConversationPane({
       ) : null}
 
       {searchOpen ? (
-        <div className="border-b border-theme-border px-4 py-3" style={headerStyle}>
-          <div className="flex items-center gap-2 rounded-lg border border-theme-border px-3 py-2" style={inputStyle}>
+        <div className="border-b border-theme-border px-3 py-3 sm:px-4" style={headerStyle}>
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-theme-border px-3 py-2" style={inputStyle}>
             <Search size={14} className="text-theme-text2" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Rechercher un mot, un verset, une réponse..."
-              className="flex-1 bg-transparent text-sm outline-none"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               style={{ color: inputStyle.color }}
             />
             {search ? (
-              <span className="text-[11px] text-theme-text2">
+              <span className="w-full text-[11px] text-theme-text2 sm:w-auto">
                 {filteredMessages.length} résultat{filteredMessages.length > 1 ? "s" : ""}
               </span>
             ) : null}
@@ -1136,7 +1136,7 @@ function ConversationPane({
       ) : null}
 
       {noteOpen ? (
-        <div className="border-b border-theme-border px-4 py-3" style={headerStyle}>
+        <div className="border-b border-theme-border px-3 py-3 sm:px-4" style={headerStyle}>
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wide text-theme-text2">Note privée</p>
             {savingNote ? <span className="text-[11px] text-theme-text2">Sauvegarde...</span> : null}
@@ -1154,7 +1154,7 @@ function ConversationPane({
       ) : null}
 
       {pinnedMessages.length > 0 ? (
-        <div className="border-b border-theme-border px-4 py-2" style={headerStyle}>
+        <div className="border-b border-theme-border px-3 py-2 sm:px-4" style={headerStyle}>
           <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-theme-text2">
             <Pin size={13} />
             {pinnedMessages.length} message{pinnedMessages.length > 1 ? "s" : ""} épinglé{pinnedMessages.length > 1 ? "s" : ""}
@@ -1165,7 +1165,7 @@ function ConversationPane({
                 key={`pin-${message.id}`}
                 type="button"
                 onClick={() => scrollToMessage(message.id)}
-                className="min-w-[220px] rounded-lg border border-theme-border px-3 py-2 text-left text-xs"
+                className="min-w-[200px] rounded-lg border border-theme-border px-3 py-2 text-left text-xs sm:min-w-[220px]"
                 style={theme === "dark" ? { backgroundColor: "#141320" } : { backgroundColor: "#FFFFFF" }}
               >
                 <p className="mb-1 line-clamp-2 text-theme-text1">{message.content}</p>
@@ -1196,7 +1196,7 @@ function ConversationPane({
         </div>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto px-4 py-3" style={messagesPanelStyle}>
+      <div className="flex-1 overflow-y-auto px-2 py-3 sm:px-4" style={messagesPanelStyle}>
         {hasMore ? (
           <div className="mb-3 flex justify-center">
             <button
@@ -1270,7 +1270,7 @@ function ConversationPane({
                     </button>
                   ) : null}
 
-                  <div className={`max-w-[80%] ${isPastor ? "items-end" : "items-start"} flex flex-col`}>
+                  <div className={`max-w-[90%] sm:max-w-[80%] ${isPastor ? "items-end" : "items-start"} flex flex-col`}>
                     <div
                       className={`px-3 py-2 text-sm ${messagePinned ? "ring-1 ring-amber-400/60" : ""}`}
                       style={
@@ -1363,7 +1363,7 @@ function ConversationPane({
         )}
       </div>
 
-      <div className="border-t p-3" style={composerWrapStyle}>
+      <div className="border-t p-2 sm:p-3" style={composerWrapStyle}>
         {error ? <p className="mb-2 text-xs text-red-500">{error}</p> : null}
 
         {draftStorageKey && text.trim() ? (
@@ -1385,7 +1385,7 @@ function ConversationPane({
           </div>
         ) : null}
 
-        <div className="relative flex items-center gap-2">
+        <div className="relative flex flex-col gap-2 sm:flex-row sm:items-end">
           <input
             ref={fileInputRef}
             type="file"
@@ -1393,88 +1393,91 @@ function ConversationPane({
             className="hidden"
             onChange={handleDocumentSelected}
           />
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setVariablesOpen((prev) => !prev)}
+                className="inline-flex items-center gap-1 rounded-lg border border-theme-border px-2 py-2 text-xs text-theme-text2"
+              >
+                Variables
+                <ChevronDown size={12} />
+              </button>
 
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setVariablesOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1 rounded-lg border border-theme-border px-2 py-2 text-xs text-theme-text2"
-            >
-              Variables
-              <ChevronDown size={12} />
-            </button>
-
-            {variablesOpen ? (
-              <div className="absolute bottom-11 left-0 z-10 w-40 rounded-lg border border-theme-border bg-theme-surface p-1 shadow-lg">
-                {["[prénom]", "[pays]", "[église]"].map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => insertVariable(item)}
-                    className="block w-full rounded-md px-2 py-1 text-left text-xs text-theme-text1 hover:bg-theme-bg"
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
-          <div ref={emojiRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setEmojiOpen((prev) => !prev)}
-              className="inline-flex items-center justify-center rounded-lg border border-theme-border p-2 text-theme-text2 hover:text-theme-text1"
-            >
-              <Smile size={16} />
-            </button>
-
-            {emojiOpen ? (
-              <div className="absolute bottom-11 left-0 z-10 w-64 rounded-lg border border-theme-border bg-theme-surface p-2 shadow-lg">
-                <div className="grid grid-cols-8 gap-0.5">
-                  {EMOJIS.map((emoji) => (
+              {variablesOpen ? (
+                <div className="absolute bottom-11 left-0 z-10 w-40 max-w-[calc(100vw-2rem)] rounded-lg border border-theme-border bg-theme-surface p-1 shadow-lg">
+                  {["[prénom]", "[pays]", "[église]"].map((item) => (
                     <button
-                      key={emoji}
+                      key={item}
                       type="button"
-                      onClick={() => insertEmoji(emoji)}
-                      className="flex items-center justify-center rounded p-1 text-base hover:bg-theme-bg"
+                      onClick={() => insertVariable(item)}
+                      className="block w-full rounded-md px-2 py-1 text-left text-xs text-theme-text1 hover:bg-theme-bg"
                     >
-                      {emoji}
+                      {item}
                     </button>
                   ))}
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
+
+            <div ref={emojiRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setEmojiOpen((prev) => !prev)}
+                className="inline-flex items-center justify-center rounded-lg border border-theme-border p-2 text-theme-text2 hover:text-theme-text1"
+              >
+                <Smile size={16} />
+              </button>
+
+              {emojiOpen ? (
+                <div className="absolute bottom-11 left-0 z-10 w-[min(16rem,calc(100vw-2rem))] rounded-lg border border-theme-border bg-theme-surface p-2 shadow-lg">
+                  <div className="grid grid-cols-8 gap-0.5">
+                    {EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => insertEmoji(emoji)}
+                        className="flex items-center justify-center rounded p-1 text-base hover:bg-theme-bg"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingDocument || sending}
+              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-theme-border p-2 text-theme-text2 hover:text-theme-text1 disabled:opacity-60"
+              title="Importer et envoyer un document"
+            >
+              <Paperclip size={16} />
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingDocument || sending}
-            className="inline-flex items-center justify-center rounded-lg border border-theme-border p-2 text-theme-text2 hover:text-theme-text1 disabled:opacity-60"
-            title="Importer et envoyer un document"
-          >
-            <Paperclip size={16} />
-          </button>
+          <div className="flex min-w-0 items-center gap-2 sm:flex-1">
+            <input
+              ref={inputRef}
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Écrire un message..."
+              className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm outline-none"
+              style={inputStyle}
+            />
 
-          <input
-            ref={inputRef}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Écrire un message..."
-            className="flex-1 rounded-lg border px-3 py-2 text-sm outline-none"
-            style={inputStyle}
-          />
-
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={sending || uploadingDocument || !text.trim()}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#6C3FE8] text-white disabled:opacity-60"
-          >
-            <Send size={14} />
-          </button>
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={sending || uploadingDocument || !text.trim()}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#6C3FE8] text-white disabled:opacity-60"
+            >
+              <Send size={14} />
+            </button>
+          </div>
         </div>
 
         {uploadingDocument ? (

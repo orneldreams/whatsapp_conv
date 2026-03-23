@@ -181,10 +181,10 @@ function SingleDiscipleCheckinModal({ isOpen, onClose, disciple, onReadMessages 
       : { backgroundColor: "#FFFFFF", borderColor: "#C4B5FD" };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
-      <div className="w-full max-w-[680px] overflow-hidden rounded-2xl border shadow-xl" style={panelStyle}>
-        <div className="flex items-center justify-between border-b border-theme-border px-4 py-3">
-          <div className="flex items-center gap-3">
+    <div className="fixed inset-0 z-50 overflow-y-auto p-3 sm:flex sm:items-center sm:justify-center sm:p-4" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+      <div className="mx-auto w-full max-w-[680px] overflow-hidden rounded-2xl border shadow-xl" style={panelStyle}>
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-theme-border px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div
               className="flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold"
               style={{ backgroundColor: avatar.bg, color: avatar.text }}
@@ -192,12 +192,12 @@ function SingleDiscipleCheckinModal({ isOpen, onClose, disciple, onReadMessages 
               {getInitials(disciple.name)}
             </div>
 
-            <div>
-              <p className="text-[15px] font-semibold text-theme-text1">{disciple.name || "Inconnu"}</p>
-              <p className="text-[12px] text-[#6C3FE8]">{disciple.displayPhone || disciple.phoneNumber || disciple.id}</p>
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-semibold text-theme-text1">{disciple.name || "Inconnu"}</p>
+              <p className="truncate text-[12px] text-[#6C3FE8]">{disciple.displayPhone || disciple.phoneNumber || disciple.id}</p>
             </div>
 
-            <span className={`ml-1 inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${statusBadge.className}`}>
+            <span className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${statusBadge.className}`}>
               {statusBadge.label}
             </span>
           </div>
@@ -213,7 +213,7 @@ function SingleDiscipleCheckinModal({ isOpen, onClose, disciple, onReadMessages 
         </div>
 
         <div className="p-4">
-          <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-theme-border p-1">
+          <div className="mb-4 grid grid-cols-1 gap-2 rounded-xl border border-theme-border p-1 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setActiveTab("structured")}
@@ -334,7 +334,7 @@ function SingleDiscipleCheckinModal({ isOpen, onClose, disciple, onReadMessages 
               </button>
             </form>
           ) : (
-            <div className="h-[520px]">
+            <div className="h-[60dvh] min-h-[420px] sm:h-[520px]">
               <ConversationPane
                 disciple={disciple}
                 showHeader={false}

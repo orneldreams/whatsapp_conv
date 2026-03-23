@@ -121,10 +121,10 @@ function PhoneInput({ value, onChange, theme, placeholder = "Numéro" }) {
 
   return (
     <div ref={wrapperRef} className="relative">
-      <div className="flex items-stretch gap-2">
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row">
         <button
           type="button"
-          className="inline-flex min-w-[122px] items-center justify-between rounded-lg px-3 py-2 text-sm outline-none"
+          className="inline-flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm outline-none sm:min-w-[122px] sm:w-auto"
           style={{
             backgroundColor: theme === "dark" ? "#0F0E17" : "#FFFFFF",
             border: theme === "dark" ? "1px solid #2D2A3E" : "2px solid #7C3AED",
