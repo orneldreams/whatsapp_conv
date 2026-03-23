@@ -6,7 +6,6 @@ const dashboardRoutes = require("./routes/dashboard");
 const { firebaseAuth } = require("./middleware/firebaseAuth");
 const { db, admin } = require("./services/firebase");
 const { sendWithTyping, mapDeliveryStatus } = require("./utils/messaging");
-const { queue, connection: queueConnection } = require("./jobs/queue");
 const { startOnboarding, handleOnboardingResponse } = require("./handlers/onboarding");
 const { handleCheckinResponse } = require("./handlers/checkin");
 const { handleVerification } = require("./handlers/verification");
@@ -104,49 +103,8 @@ function verifyTwilioSignature(req, res, next) {
   return next();
 }
 
-app.get("/health", async (_req, res) => {
-  const startedAt = Date.now();
-  const checks = {
-    firestore: { ok: false },
-    twilio: { ok: false },
-    queue: { ok: false }
-  };
-
-  try {
-    await db.collection("pasteurs").limit(1).get();
-    checks.firestore = { ok: true };
-  } catch (error) {
-    checks.firestore = { ok: false, error: error?.message || "Firestore check failed" };
-  }
-
-  checks.twilio = {
-    ok: Boolean(config.twilio.accountSid && config.twilio.authToken && config.twilio.fromNumber),
-    validateSignature: Boolean(config.twilio.validateSignature),
-    webhookUrl: config.twilio.webhookUrl || null,
-    fromNumber: config.twilio.fromNumber || null
-  };
-
-  try {
-    const pong = await queueConnection.ping();
-    const counts = await queue.getJobCounts("waiting", "active", "completed", "failed", "delayed");
-    checks.queue = {
-      ok: String(pong || "").toUpperCase() === "PONG",
-      counts
-    };
-  } catch (error) {
-    checks.queue = { ok: false, error: error?.message || "Queue check failed" };
-  }
-
-  const overallOk = checks.firestore.ok && checks.twilio.ok && checks.queue.ok;
-  const payload = {
-    status: overallOk ? "ok" : "degraded",
-    uptimeSeconds: Math.round(process.uptime()),
-    responseMs: Date.now() - startedAt,
-    timestamp: new Date().toISOString(),
-    checks
-  };
-
-  res.status(overallOk ? 200 : 503).json(payload);
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
 app.use("/api", firebaseAuth, dashboardRoutes);

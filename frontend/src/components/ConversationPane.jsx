@@ -400,34 +400,6 @@ function ConversationPane({
     () => allMessages.filter((item) => item.sender === "disciple" && item.read === false),
     [allMessages]
   );
-  const outgoingQueueSummary = useMemo(() => {
-    return allMessages
-      .filter((message) => message.sender === "pastor" && message.type !== "typing")
-      .reduce((acc, message) => {
-        const status = String(message.deliveryStatus || "sent").toLowerCase();
-        if (["sending", "queued", "accepted"].includes(status)) {
-          acc.pending += 1;
-        } else if (status === "failed") {
-          acc.failed += 1;
-        } else {
-          acc.sent += 1;
-        }
-        return acc;
-      }, { pending: 0, sent: 0, failed: 0 });
-  }, [allMessages]);
-  const failedStreakCount = useMemo(() => {
-    const outgoing = allMessages.filter((message) => message.sender === "pastor" && message.type !== "typing");
-    let streak = 0;
-    for (let i = outgoing.length - 1; i >= 0; i -= 1) {
-      const status = String(outgoing[i].deliveryStatus || "").toLowerCase();
-      if (status === "failed") {
-        streak += 1;
-      } else {
-        break;
-      }
-    }
-    return streak;
-  }, [allMessages]);
   const grouped = useMemo(() => groupMessagesByDate(filteredMessages), [filteredMessages]);
   const pinnedMessages = useMemo(
     () => allMessages.filter((message) => message.pinned && isActiveUntil(message.pinnedUntil) && message.type !== "typing")
@@ -1273,25 +1245,15 @@ function ConversationPane({
         </div>
       ) : null}
 
-      {(outgoingQueueSummary.pending > 0 || outgoingQueueSummary.sent > 0 || outgoingQueueSummary.failed > 0 || failedStreakCount >= 3) ? (
-        <div className="flex flex-wrap items-center gap-2 border-b border-theme-border px-3 py-2 text-[11px] sm:px-4" style={headerStyle}>
-          <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-sky-400">En attente: {outgoingQueueSummary.pending}</span>
-          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-400">Envoyé: {outgoingQueueSummary.sent}</span>
-          <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">Échec: {outgoingQueueSummary.failed}</span>
-          {failedStreakCount >= 3 ? (
-            <span className="rounded-full bg-red-500/20 px-2 py-0.5 font-semibold text-red-300">
-              Alerte: {failedStreakCount} échecs consécutifs
-            </span>
-          ) : null}
-          {unreadDiscipleMessages.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => scrollToMessage(unreadDiscipleMessages[unreadDiscipleMessages.length - 1]?.id)}
-              className="rounded-full border border-theme-border px-2 py-0.5 text-theme-text2 hover:text-theme-text1"
-            >
-              Aller au dernier non lu ({unreadDiscipleMessages.length})
-            </button>
-          ) : null}
+      {unreadDiscipleMessages.length > 0 ? (
+        <div className="flex items-center justify-end border-b border-theme-border px-3 py-2 text-[11px] sm:px-4" style={headerStyle}>
+          <button
+            type="button"
+            onClick={() => scrollToMessage(unreadDiscipleMessages[unreadDiscipleMessages.length - 1]?.id)}
+            className="rounded-full border border-theme-border px-2 py-0.5 text-theme-text2 hover:text-theme-text1"
+          >
+            Aller au dernier non lu ({unreadDiscipleMessages.length})
+          </button>
         </div>
       ) : null}
 
