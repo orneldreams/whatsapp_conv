@@ -37,7 +37,10 @@ const explicitOrigins = [
   "http://localhost:5177",
   "http://localhost:5178",
   "http://127.0.0.1:5173",
-  "http://127.0.0.1:5178"
+  "http://127.0.0.1:5178",
+  // Vercel URLs
+  "https://whatsapp-conv.vercel.app",
+  "https://whatsapp-conv-fhcub51cu-orneldreams-projects.vercel.app"
 ];
 
 const configuredOrigins = String(config.corsOrigin || "")
@@ -47,12 +50,26 @@ const configuredOrigins = String(config.corsOrigin || "")
 
 const allowedOrigins = Array.from(new Set([...explicitOrigins, ...configuredOrigins]));
 
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Accepter tous les déploiements Vercel automatiquement
+  if (/^https:\/\/whatsapp-conv[^.]*\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
+
 if (process.env.NODE_ENV === "development") {
   app.use(cors({ origin: true, credentials: true }));
 } else {
   app.use(
     cors({
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error(`CORS bloqué pour: ${origin}`));
+        }
+      },
       credentials: true
     })
   );
