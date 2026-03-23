@@ -98,6 +98,11 @@ function formatFileSize(bytes) {
   return `${(size / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
+function stripWhatsAppPrefix(phoneNumber) {
+  const phone = String(phoneNumber || "").trim();
+  return phone.replace(/^whatsapp:/i, "");
+}
+
 function isImageMimeType(mimeType) {
   return String(mimeType || "").toLowerCase().startsWith("image/");
 }
@@ -1077,10 +1082,10 @@ function ConversationPane({
               </div>
               <p className="truncate text-xs text-theme-text2">
                 <span className="sm:hidden">
-                  {(disciple?.displayPhone || disciple?.phoneNumber || discipleId || "").slice(0, 5)}...
+                  {stripWhatsAppPrefix(disciple?.displayPhone || disciple?.phoneNumber || discipleId || "").slice(0, 5)}...
                 </span>
                 <span className="hidden sm:inline">
-                  {disciple?.displayPhone || disciple?.phoneNumber || discipleId || ""}
+                  {stripWhatsAppPrefix(disciple?.displayPhone || disciple?.phoneNumber || discipleId || "")}
                 </span>
               </p>
             </div>
