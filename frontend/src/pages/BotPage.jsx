@@ -427,7 +427,7 @@ function BotPageContent({ onLogout }) {
       ) : null}
 
       {!loading ? (
-        <div className="grid min-h-[calc(100vh-8.5rem)] gap-4 grid-cols-[1fr_1fr_0.85fr]">
+        <div className="grid gap-4 grid-cols-1 xl:grid-cols-[1fr_1fr_0.85fr] xl:min-h-[calc(100vh-8.5rem)]">
           {/* Gauche : Questions onboarding */}
           <QuestionsColumn
             title="Questions d'onboarding"

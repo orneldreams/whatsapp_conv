@@ -31,18 +31,22 @@ function PhoneInput({ value, onChange, theme, placeholder = "Numéro" }) {
     const countryFromValue = getCountryByDialCode(parsed.dialCode);
 
     if (countryFromValue && countryFromValue.cca2 !== selectedCountry?.cca2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedCountry(countryFromValue);
     }
 
     if (parsed.nationalNumber !== nationalNumber) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNationalNumber(parsed.nationalNumber);
     }
 
     if (!value && selectedCountry?.dialCodes?.[0] !== DEFAULT_COUNTRY?.dialCodes?.[0]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedCountry(DEFAULT_COUNTRY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNationalNumber("");
     }
-  }, [value]);
+  }, [value, nationalNumber, selectedCountry?.cca2, selectedCountry?.dialCodes]);
 
   useEffect(() => {
     if (!open) return;

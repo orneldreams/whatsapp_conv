@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { collection, onSnapshot } from "firebase/firestore";
 import {
   CalendarDays,
   ChevronLeft,
@@ -18,7 +19,9 @@ import Layout from "../components/Layout";
 import ManualCheckinModal from "../components/ManualCheckinModal";
 import PhoneInput from "../components/PhoneInput";
 import SingleDiscipleCheckinModal from "../components/SingleDiscipleCheckinModal";
+import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { firestore } from "../services/firebase";
 import { formatCountryWithFlag } from "../utils/countries";
 
 const avatarColors = [
@@ -121,6 +124,7 @@ function ModalDatePicker({ value, onChange, theme }) {
   useEffect(() => {
     if (!value) return;
     const base = parseDateKey(value);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1));
   }, [value]);
 
@@ -255,6 +259,35 @@ function normalizeStatus(status) {
   return status === "Onboarding en cours" ? "Onboarding" : status;
 }
 
+function VerificationBadge({ verificationStatus, addedBy }) {
+  if (!addedBy || addedBy === "whatsapp") return null;
+  if (verificationStatus === "none")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+        Non requis
+      </span>
+    );
+  if (verificationStatus === "pending")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+        ⏳ En attente
+      </span>
+    );
+  if (verificationStatus === "verified")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+        ✅ Vérifié
+      </span>
+    );
+  if (verificationStatus === "failed")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">
+        ⚠️ Échec
+      </span>
+    );
+  return null;
+}
+
 function AddDiscipleModal({ isOpen, onClose, onCreated }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -325,12 +358,22 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
     setError("");
   }
 
+  const PHONE_REGEX = /^\+[0-9]{6,15}$/;
+  const phoneError = newDisciple.phoneNumber && !PHONE_REGEX.test(newDisciple.phoneNumber)
+    ? "Le numéro doit commencer par + suivi de chiffres uniquement\nEx: +33758384679"
+    : "";
+
   async function handleCreate(event) {
     event.preventDefault();
     setError("");
 
     if (!newDisciple.name.trim() || !newDisciple.phoneNumber.trim()) {
       setError("Nom et numero sont requis");
+      return;
+    }
+
+    if (!PHONE_REGEX.test(newDisciple.phoneNumber)) {
+      setError("Le numéro doit commencer par + suivi de chiffres uniquement\nEx: +33758384679");
       return;
     }
 
@@ -347,7 +390,7 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
     }
   }
 
-  const canSave = newDisciple.name.trim() && newDisciple.phoneNumber.trim();
+  const canSave = newDisciple.name.trim() && newDisciple.phoneNumber.trim() && !phoneError;
 
   return (
     <div
@@ -382,6 +425,9 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
                 theme={theme}
                 placeholder="+237 6XX XXX XXX"
               />
+              {phoneError ? (
+                <p className="mt-1 whitespace-pre-line text-xs" style={{ color: "#EF4444" }}>{phoneError}</p>
+              ) : null}
             </label>
 
             <div className="grid gap-3 md:grid-cols-2">
@@ -561,6 +607,7 @@ function AddDiscipleModal({ isOpen, onClose, onCreated }) {
 }
 
 function DisciplesPage({ onLogout }) {
+  const { user } = useAuth();
   const { theme } = useTheme();
   const [items, setItems] = useState([]);
   const [stats, setStats] = useState(null);
@@ -583,6 +630,10 @@ function DisciplesPage({ onLogout }) {
   const [sortDirection, setSortDirection] = useState("asc");
 
   const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
+  const searchRef = useRef("");
+  const statusFilterRef = useRef("all");
+  const countryFilterRef = useRef("all");
   const limit = 50;
   const [pagination, setPagination] = useState({
     page: 1,
@@ -594,6 +645,7 @@ function DisciplesPage({ onLogout }) {
   });
 
   const [countries, setCountries] = useState([]);
+  const [manualCandidates, setManualCandidates] = useState([]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -608,25 +660,35 @@ function DisciplesPage({ onLogout }) {
     setPage(1);
   }, [statusFilter, countryFilter]);
 
-  async function fetchDisciplesAndStats(targetPage = page) {
+  useEffect(() => {
+    pageRef.current = page;
+    searchRef.current = search;
+    statusFilterRef.current = statusFilter;
+    countryFilterRef.current = countryFilter;
+  }, [page, search, statusFilter, countryFilter]);
+
+  async function fetchDisciplesAndStats(targetPage = pageRef.current) {
     setLoading(true);
     setError("");
 
     try {
+      const effectiveSearch = searchRef.current;
+      const effectiveStatusFilter = statusFilterRef.current;
+      const effectiveCountryFilter = countryFilterRef.current;
       const params = new URLSearchParams();
       params.set("page", String(targetPage));
       params.set("limit", String(limit));
 
-      if (search) {
-        params.set("search", search);
+      if (effectiveSearch) {
+        params.set("search", effectiveSearch);
       }
 
-      if (statusFilter !== "all") {
-        params.set("status", statusFilter);
+      if (effectiveStatusFilter !== "all") {
+        params.set("status", effectiveStatusFilter);
       }
 
-      if (countryFilter !== "all") {
-        params.set("country", countryFilter);
+      if (effectiveCountryFilter !== "all") {
+        params.set("country", effectiveCountryFilter);
       }
 
       const [disciplesRes, statsRes] = await Promise.all([
@@ -658,20 +720,57 @@ function DisciplesPage({ onLogout }) {
   }, [page, search, statusFilter, countryFilter]);
 
   useEffect(() => {
-    async function loadCountries() {
+    if (!user?.uid) return undefined;
+
+    const disciplesRef = collection(firestore, "pasteurs", user.uid, "disciples");
+    const unsubscribe = onSnapshot(
+      disciplesRef,
+      () => {
+        fetchDisciplesAndStats(pageRef.current);
+      },
+      () => {
+        // Erreur temps réel non bloquante
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  useEffect(() => {
+    async function loadSidebarData() {
       try {
         const res = await api.get("/api/disciples?page=1&limit=200");
+        setManualCandidates(res.data.items || []);
         const countryValues = (res.data.items || [])
           .map((item) => item.currentCountry)
           .filter(Boolean);
 
         setCountries(Array.from(new Set(countryValues)).sort((a, b) => a.localeCompare(b, "fr")));
-      } catch (_err) {
+      } catch {
+        setManualCandidates([]);
         setCountries([]);
       }
     }
 
-    loadCountries();
+    loadSidebarData();
+  }, []);
+
+  const handleMessagesRead = useCallback(({ discipleId }) => {
+    if (!discipleId) {
+      return;
+    }
+
+    const clearUnread = (entry) => (entry.id === discipleId ? { ...entry, unreadCount: 0 } : entry);
+
+    setItems((prev) => prev.map(clearUnread));
+    setManualCandidates((prev) => prev.map(clearUnread));
+    setSelectedDiscipleForCheckin((prev) => {
+      if (!prev || prev.id !== discipleId) {
+        return prev;
+      }
+
+      return { ...prev, unreadCount: 0 };
+    });
   }, []);
 
   const sortedItems = useMemo(() => {
@@ -749,10 +848,10 @@ function DisciplesPage({ onLogout }) {
   return (
     <Layout title="Disciples" onLogout={onLogout}>
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 xl:w-auto xl:flex xl:flex-wrap">
             <button
-              className="inline-flex items-center gap-2 rounded-lg bg-[#6C3FE8] px-4 py-2 text-sm font-medium text-white"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#6C3FE8] px-4 py-2 text-sm font-medium text-white xl:w-auto"
               onClick={() => setShowAddModal(true)}
             >
               <UserPlus size={16} />
@@ -760,7 +859,7 @@ function DisciplesPage({ onLogout }) {
             </button>
 
             <button
-              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+              className={`inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-colors xl:w-auto ${
                 theme === "dark"
                   ? "border-theme-border bg-transparent text-theme-text2 hover:border-[#6C3FE8] hover:text-theme-text1"
                   : "secondary-accent-button"
@@ -772,13 +871,13 @@ function DisciplesPage({ onLogout }) {
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="relative">
+          <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 xl:flex xl:w-auto xl:flex-wrap xl:items-center xl:justify-end">
+            <div className="relative sm:col-span-2 xl:col-span-1">
               <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted" />
               <input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="rounded-lg border border-theme-border bg-theme-surface py-2 pl-9 pr-3 text-sm text-theme-text1"
+                className="w-full rounded-lg border border-theme-border bg-theme-surface py-2 pl-9 pr-3 text-sm text-theme-text1 xl:min-w-[260px]"
                 placeholder="Rechercher nom ou numero"
               />
             </div>
@@ -786,7 +885,7 @@ function DisciplesPage({ onLogout }) {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-lg border border-theme-border bg-theme-surface px-3 py-2 text-sm text-theme-text1"
+              className="w-full rounded-lg border border-theme-border bg-theme-surface px-3 py-2 text-sm text-theme-text1 xl:w-auto"
             >
               <option value="all">Tous statuts</option>
               <option value="actif">Actif</option>
@@ -797,7 +896,7 @@ function DisciplesPage({ onLogout }) {
             <select
               value={countryFilter}
               onChange={(e) => setCountryFilter(e.target.value)}
-              className="rounded-lg border border-theme-border bg-theme-surface px-3 py-2 text-sm text-theme-text1"
+              className="w-full rounded-lg border border-theme-border bg-theme-surface px-3 py-2 text-sm text-theme-text1 xl:w-auto"
             >
               <option value="all">Tous pays</option>
               {countries.map((country) => (
@@ -808,14 +907,14 @@ function DisciplesPage({ onLogout }) {
             </select>
 
             <div
-              className={`flex overflow-hidden rounded-lg border ${
+              className={`grid grid-cols-2 overflow-hidden rounded-lg border sm:col-span-2 xl:flex ${
                 theme === "dark"
                   ? "border-theme-border bg-theme-surface"
                   : "border-[#B9A6FF] bg-white shadow-[0_2px_8px_rgba(108,63,232,0.10)]"
               }`}
             >
               <button
-                className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
                   viewMode === "table"
                     ? "bg-[#6C3FE8] text-white"
                     : theme === "dark"
@@ -828,7 +927,7 @@ function DisciplesPage({ onLogout }) {
                 Tableau
               </button>
               <button
-                className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
                   viewMode === "cards"
                     ? "bg-[#6C3FE8] text-white"
                     : theme === "dark"
@@ -844,7 +943,7 @@ function DisciplesPage({ onLogout }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-2 gap-3 xl:flex xl:flex-wrap">
           <div className="secondary-accent-pill inline-flex items-center gap-2 rounded-full border border-theme-border bg-theme-surface px-3 py-1">
             <span className="h-2 w-2 rounded-full bg-[#6C3FE8]" /> <span className="text-[13px] text-theme-text2">Total</span> <strong className="ml-1 text-[15px] text-theme-text1">{stats?.totalDisciples ?? 0}</strong>
           </div>
@@ -866,35 +965,46 @@ function DisciplesPage({ onLogout }) {
             {loading ? <p className="px-4 py-6 text-sm text-theme-muted">Chargement...</p> : null}
 
             {!loading ? (
-              <table className="w-full flex-1 overflow-y-auto text-left text-sm">
-                <thead
-                  className="border-b border-theme-border text-[12px] uppercase tracking-wide text-theme-text2"
-                  style={{ backgroundColor: theme === "dark" ? "#0F0E17" : "#F5F3FF" }}
-                >
-                  <tr>
-                    <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("name")}>Disciple ↕</th>
-                    <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("currentCountry")}>Pays ↕</th>
-                    <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("church")}>Eglise ↕</th>
-                    <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("status")}>Statut ↕</th>
-                    <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("lastContact")}>Dernier contact ↕</th>
-                    <th className="px-4 py-3">Actions</th>
-                  </tr>
-                </thead>
+              <div className="flex-1 overflow-x-auto overflow-y-auto">
+                <table className="min-w-[860px] w-full text-left text-sm">
+                  <thead
+                    className="border-b border-theme-border text-[12px] uppercase tracking-wide text-theme-text2"
+                    style={{ backgroundColor: theme === "dark" ? "#0F0E17" : "#F5F3FF" }}
+                  >
+                    <tr>
+                      <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("name")}>Disciple ↕</th>
+                      <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("currentCountry")}>Pays ↕</th>
+                      <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("church")}>Eglise ↕</th>
+                      <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("status")}>Statut ↕</th>
+                      <th className="cursor-pointer px-4 py-3" onClick={() => toggleSort("lastContact")}>Dernier contact ↕</th>
+                      <th className="px-4 py-3">Actions</th>
+                    </tr>
+                  </thead>
 
-                <tbody className="divide-y divide-theme-border">
-                  {sortedItems.map((disciple) => (
-                    <tr
-                      key={disciple.id}
-                      className={`group ${theme === "dark" ? "hover:bg-[#0F0E17]/70" : "hover:bg-[#F5F3FF]"}`}
-                    >
+                  <tbody className="divide-y divide-theme-border">
+                    {sortedItems.map((disciple) => (
+                      <tr
+                        key={disciple.id}
+                        className={`group ${theme === "dark" ? "hover:bg-[#0F0E17]/70" : "hover:bg-[#F5F3FF]"}`}
+                      >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold" style={{ backgroundColor: getAvatarColor(disciple.name).bg, color: getAvatarColor(disciple.name).text }}>
-                            {getInitials(disciple.name)}
+                          <div className="relative">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold" style={{ backgroundColor: getAvatarColor(disciple.name).bg, color: getAvatarColor(disciple.name).text }}>
+                              {getInitials(disciple.name)}
+                            </div>
+                            {disciple.unreadCount > 0 ? (
+                              <span className="absolute -right-1 -top-1 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                                {disciple.unreadCount > 99 ? "99+" : disciple.unreadCount}
+                              </span>
+                            ) : null}
                           </div>
                           <div>
                             <p className="text-[15px] font-medium text-theme-text1">{disciple.name || "Inconnu"}</p>
-                            <p className="text-[12px] text-theme-muted">{disciple.phoneNumber}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-[12px] text-theme-muted">{disciple.displayPhone || disciple.phoneNumber}</p>
+                              <VerificationBadge verificationStatus={disciple.verificationStatus} addedBy={disciple.addedBy} />
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -919,7 +1029,7 @@ function DisciplesPage({ onLogout }) {
                           </Link>
 
                           <button
-                            className="inline-flex items-center gap-1.5 rounded-md bg-[#0EA5A4] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[#0B8E8D]"
+                            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-[#0EA5A4] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[#0B8E8D]"
                             onClick={() => {
                               setSelectedDiscipleForCheckin(disciple);
                               setShowSingleCheckinModal(true);
@@ -937,22 +1047,23 @@ function DisciplesPage({ onLogout }) {
                           </button>
                         </div>
                       </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : null}
 
             {!loading && sortedItems.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-theme-muted">Aucun disciple trouve.</p>
             ) : null}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-theme-border px-4 py-3 text-sm">
+            <div className="flex flex-col gap-3 border-t border-theme-border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <p className="text-theme-muted">
                 Affichage {from}–{to} sur {total} disciples
               </p>
 
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1">
                 <button
                   disabled={!pagination.hasPrev}
                   onClick={() => setPage((prev) => Math.max(1, prev - 1))}
@@ -1003,12 +1114,22 @@ function DisciplesPage({ onLogout }) {
                 <div className="border-b border-theme-border px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold" style={{ backgroundColor: getAvatarColor(disciple.name).bg, color: getAvatarColor(disciple.name).text }}>
-                        {getInitials(disciple.name)}
+                      <div className="relative">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold" style={{ backgroundColor: getAvatarColor(disciple.name).bg, color: getAvatarColor(disciple.name).text }}>
+                          {getInitials(disciple.name)}
+                        </div>
+                        {disciple.unreadCount > 0 ? (
+                          <span className="absolute -right-1 -top-1 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                            {disciple.unreadCount > 99 ? "99+" : disciple.unreadCount}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="flex-1">
                         <p className="text-[15px] font-medium text-theme-text1">{disciple.name || "Inconnu"}</p>
-                        <p className="text-[12px] text-[#6C3FE8]">{disciple.phoneNumber}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-[12px] text-[#6C3FE8]">{disciple.displayPhone || disciple.phoneNumber}</p>
+                          <VerificationBadge verificationStatus={disciple.verificationStatus} addedBy={disciple.addedBy} />
+                        </div>
                       </div>
                     </div>
                     <span className={`rounded-full px-2 py-1 text-[12px] font-medium flex-shrink-0 ${statusClass(disciple.status, theme === "dark")}`}>
@@ -1040,18 +1161,18 @@ function DisciplesPage({ onLogout }) {
                 </div>
 
                 {/* Footer */}
-                <div className="border-t border-theme-border px-4 py-3 flex items-center justify-between gap-2">
-                  <p className="text-[12px] text-theme-muted">Dernier contact: {formatDateFr(disciple.lastContact)}</p>
-                  <div className="flex gap-2">
+                <div className="border-t border-theme-border px-4 py-3">
+                  <p className="mb-3 text-[12px] text-theme-muted">Dernier contact: {formatDateFr(disciple.lastContact)}</p>
+                  <div className="flex items-stretch gap-2">
                     <Link
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#6C3FE8] px-5 py-2 text-[12px] font-medium text-white"
+                      className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#6C3FE8] px-4 py-2 text-[12px] font-medium text-white"
                       to={`/disciples/${encodeURIComponent(disciple.id)}`}
                     >
                       <UserRound size={14} />
                       Profil
                     </Link>
                     <button
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#6C3FE8] px-5 py-2 text-[12px] font-medium text-white"
+                      className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#6C3FE8] px-4 py-2 text-[12px] font-medium text-white"
                       onClick={() => {
                         setSelectedDiscipleForCheckin(disciple);
                         setShowSingleCheckinModal(true);
@@ -1061,7 +1182,7 @@ function DisciplesPage({ onLogout }) {
                       Check-in
                     </button>
                     <button
-                      className="rounded-lg border border-[#EF4444] px-3 py-2 text-[12px] text-[#EF4444] transition-colors hover:bg-[#EF4444] hover:text-white"
+                      className="inline-flex h-auto items-center justify-center rounded-lg border border-[#EF4444] px-3 py-2 text-[12px] text-[#EF4444] transition-colors hover:bg-[#EF4444] hover:text-white"
                       onClick={() => handleDelete(disciple.id)}
                     >
                       ✕
@@ -1088,7 +1209,7 @@ function DisciplesPage({ onLogout }) {
       <ManualCheckinModal
         isOpen={showManualModal}
         onClose={() => setShowManualModal(false)}
-        disciples={items}
+        disciples={manualCandidates.length > 0 ? manualCandidates : items}
       />
 
       <SingleDiscipleCheckinModal
@@ -1098,6 +1219,7 @@ function DisciplesPage({ onLogout }) {
           setSelectedDiscipleForCheckin(null);
         }}
         disciple={selectedDiscipleForCheckin}
+        onReadMessages={handleMessagesRead}
       />
 
       {confirmDelete && (

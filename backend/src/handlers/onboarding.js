@@ -2,8 +2,8 @@ const { admin } = require("../services/firebase");
 
 const onboardingQuestions = [
   "Quel est ton prenom ?",
-  "Es-tu nouveau dans la foi ou chretien depuis un moment ?",
-  "Quelle est ta principale intention de priere en ce moment ?"
+  "Es-tu nouveau dans la foi ou chrétien depuis un moment ?",
+  "Quelle est ta principale intention de prière en ce moment ?"
 ];
 
 async function startOnboarding(userRef) {
@@ -25,7 +25,8 @@ async function handleOnboardingResponse(userRef, userData, message) {
   const normalizedMessage = (message || "").trim();
 
   if (!normalizedMessage) {
-    return onboardingQuestions[Math.max(0, currentStep - 1)];
+    const sameQuestion = onboardingQuestions[Math.max(0, currentStep - 1)];
+    return sameQuestion;
   }
 
   if (currentStep === 1) {
@@ -68,6 +69,7 @@ async function handleOnboardingResponse(userRef, userData, message) {
 }
 
 module.exports = {
+  onboardingQuestions,
   startOnboarding,
   handleOnboardingResponse
 };

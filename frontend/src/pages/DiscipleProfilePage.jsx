@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Clock3, Flame, History, NotebookPen, Pencil, Trash2, UserRoundCheck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CalendarDays, Clock3, Flame, History, NotebookPen, Pencil, RefreshCw, Trash2, UserRoundCheck } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { doc, onSnapshot } from "firebase/firestore";
 import api, { getErrorMessage } from "../api/client";
 import ConfirmModal from "../components/ConfirmModal";
 import CountrySelect from "../components/CountrySelect";
 import Layout from "../components/Layout";
 import PhoneInput from "../components/PhoneInput";
 import SingleDiscipleCheckinModal from "../components/SingleDiscipleCheckinModal";
+import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { formatCountryWithFlag } from "../utils/countries";
+import { firestore } from "../services/firebase";
 
 const avatarColors = [
   { bg: "#4F46E5", text: "#fff" },
@@ -163,6 +166,7 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm({
       name: initialData.name || "",
       phoneNumber: initialData.phoneNumber || initialData.phone || "",
@@ -181,7 +185,11 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
     return null;
   }
 
-  const canSave = form.name.trim() && form.phoneNumber.trim();
+  const PHONE_REGEX = /^\+[0-9]{6,15}$/;
+  const phoneError = form.phoneNumber && !PHONE_REGEX.test(form.phoneNumber)
+    ? "Le numéro doit commencer par + suivi de chiffres uniquement\nEx: +33758384679"
+    : "";
+  const canSave = form.name.trim() && form.phoneNumber.trim() && !phoneError;
 
   function renderDynamicInput(field) {
     const value = form.customFields?.[field.key] ?? "";
@@ -388,6 +396,9 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
                 theme={theme}
                 placeholder="+237 6XX XXX XXX"
               />
+              {phoneError ? (
+                <p className="mt-1 whitespace-pre-line text-xs" style={{ color: "#EF4444" }}>{phoneError}</p>
+              ) : null}
             </label>
 
             <div className="grid gap-3 md:grid-cols-2">
@@ -606,6 +617,7 @@ function EditProfileModal({ isOpen, onClose, initialData, dynamicFields, onSave,
 function DiscipleProfilePage({ onLogout }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -619,6 +631,9 @@ function DiscipleProfilePage({ onLogout }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pastorNote, setPastorNote] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
+  // Vérification temps réel
+  const [liveVerifStatus, setLiveVerifStatus] = useState(null);
+  const [resendingVerif, setResendingVerif] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -729,6 +744,47 @@ function DiscipleProfilePage({ onLogout }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disciple?.id]);
 
+  // onSnapshot : écoute les changements de verificationStatus en temps réel
+  useEffect(() => {
+    if (!user?.uid || !id) return;
+
+    const discipleDocRef = doc(
+      firestore,
+      "pasteurs",
+      user.uid,
+      "disciples",
+      decodeURIComponent(id)
+    );
+
+    const unsubscribe = onSnapshot(
+      discipleDocRef,
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setLiveVerifStatus(data.verificationStatus || null);
+        }
+      },
+      () => {
+        // Erreur onSnapshot — on ignore silencieusement
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.uid, id]);
+
+  async function handleResendVerification() {
+    setResendingVerif(true);
+    setError("");
+    try {
+      await api.post(`/api/disciples/${encodeURIComponent(id)}/resend-verification`);
+      await refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setResendingVerif(false);
+    }
+  }
+
   async function handleSave(formData) {
     setSaving(true);
     setError("");
@@ -771,6 +827,20 @@ function DiscipleProfilePage({ onLogout }) {
     }
   }
 
+  const handleMessagesRead = useCallback(({ discipleId }) => {
+    if (!discipleId) {
+      return;
+    }
+
+    setDisciple((prev) => {
+      if (!prev || prev.id !== discipleId) {
+        return prev;
+      }
+
+      return { ...prev, unreadCount: 0 };
+    });
+  }, []);
+
   return (
     <Layout title="Profil disciple" onLogout={onLogout}>
       <div className="mb-4">
@@ -789,8 +859,8 @@ function DiscipleProfilePage({ onLogout }) {
       {error ? <p className="text-red-500">{error}</p> : null}
 
       {!loading && disciple ? (
-        <div className="grid min-h-[calc(100vh-8.5rem)] items-stretch gap-4 xl:grid-cols-[280px_1fr]">
-          <aside className="flex h-full min-h-[calc(100vh-8.5rem)] flex-col gap-4">
+        <div className="grid items-stretch gap-4 xl:min-h-[calc(100vh-8.5rem)] xl:grid-cols-[280px_1fr]">
+          <aside className="flex flex-col gap-4 xl:min-h-[calc(100vh-8.5rem)]">
             <section className="rounded-[14px] border border-theme-border bg-theme-surface p-4">
               <div className="mb-3 flex items-center gap-3">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full text-xl font-semibold" style={{ backgroundColor: getAvatarColor(disciple.name).bg, color: getAvatarColor(disciple.name).text }}>
@@ -798,7 +868,7 @@ function DiscipleProfilePage({ onLogout }) {
                 </div>
                 <div>
                   <p className="text-base font-semibold text-theme-text1">{disciple.name || "Inconnu"}</p>
-                  <p className="text-xs text-brand-600">{disciple.phoneNumber || disciple.id}</p>
+                  <p className="text-xs text-brand-600">{disciple.displayPhone || disciple.phoneNumber || disciple.id}</p>
                 </div>
               </div>
 
@@ -809,6 +879,46 @@ function DiscipleProfilePage({ onLogout }) {
               >
                 {normalizeStatus(disciple.status)}
               </span>
+
+              {/* Badge vérification d'identité — temps réel via onSnapshot */}
+              {disciple.addedBy === "manual" && (() => {
+                const vs = liveVerifStatus ?? disciple.verificationStatus;
+                if (vs === "none")
+                  return (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      Non requis
+                    </span>
+                  );
+                if (vs === "pending")
+                  return (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                      ⏳ Vérification en attente
+                    </span>
+                  );
+                if (vs === "verified")
+                  return (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                      ✅ Identité vérifiée
+                    </span>
+                  );
+                if (vs === "failed")
+                  return (
+                    <div className="mt-2 flex flex-col gap-1.5">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                        ⚠️ Vérification échouée
+                      </span>
+                      <button
+                        onClick={handleResendVerification}
+                        disabled={resendingVerif}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-2.5 py-1 text-[11px] font-medium text-white disabled:opacity-50"
+                      >
+                        <RefreshCw size={11} />
+                        {resendingVerif ? "Envoi..." : "Renvoyer la vérification"}
+                      </button>
+                    </div>
+                  );
+                return null;
+              })()}
 
               <p className="mt-3 text-[11px] text-theme-muted">
                 Membre depuis {formatDateFr(disciple.createdAt) || "-"}
@@ -890,7 +1000,7 @@ function DiscipleProfilePage({ onLogout }) {
 
                 <button
                   onClick={() => setShowManualModal(true)}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`w-full whitespace-nowrap rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     theme === "dark"
                       ? "border-[#2D2A3E] bg-transparent text-theme-text1 hover:border-[#6C3FE8]"
                       : "secondary-accent-button"
@@ -898,6 +1008,17 @@ function DiscipleProfilePage({ onLogout }) {
                 >
                   Envoyer un check-in
                 </button>
+
+                <Link
+                  to={`/disciples/${encodeURIComponent(id)}/conversation`}
+                  className={`inline-flex w-full items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    theme === "dark"
+                      ? "border-[#2D2A3E] bg-transparent text-theme-text1 hover:border-[#6C3FE8]"
+                      : "secondary-accent-button"
+                  }`}
+                >
+                  Voir la conversation complète
+                </Link>
 
                 <button
                   disabled={deleting}
@@ -911,7 +1032,7 @@ function DiscipleProfilePage({ onLogout }) {
             </section>
           </aside>
 
-          <div className="flex h-full min-h-[calc(100vh-8.5rem)] flex-col gap-4">
+          <div className="flex flex-col gap-4 xl:min-h-[calc(100vh-8.5rem)]">
             <section className="flex-1 rounded-[14px] border border-theme-border bg-theme-surface p-4">
               <h3 className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.5px] text-brand-600">
                 <UserRoundCheck size={14} />
@@ -985,7 +1106,7 @@ function DiscipleProfilePage({ onLogout }) {
                 Progression spirituelle
               </h3>
 
-              <div className="mb-4 grid gap-3 md:grid-cols-3">
+              <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <article
                   className="rounded-xl border border-theme-border bg-theme-bg p-3"
                   style={
@@ -1108,8 +1229,8 @@ function DiscipleProfilePage({ onLogout }) {
               ) : (
                 <div className="space-y-3">
                   {latestCheckins.map((checkin) => (
-                    <article key={checkin.id} className="flex gap-4 border-b border-[#2D2A3E] pb-3">
-                      <div className="min-w-[80px] text-[11px] text-theme-muted">{formatDateFr(checkin.id)}</div>
+                    <article key={checkin.id} className="flex flex-col gap-2 border-b border-[#2D2A3E] pb-3 sm:flex-row sm:gap-4">
+                      <div className="text-[11px] text-theme-muted sm:min-w-[80px]">{formatDateFr(checkin.id)}</div>
 
                       <div className="space-y-2">
                         <div>
@@ -1174,6 +1295,7 @@ function DiscipleProfilePage({ onLogout }) {
         isOpen={showManualModal}
         onClose={() => setShowManualModal(false)}
         disciple={disciple}
+        onReadMessages={handleMessagesRead}
       />
 
       {showDeleteConfirm && (

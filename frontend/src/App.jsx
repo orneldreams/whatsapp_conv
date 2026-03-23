@@ -7,7 +7,9 @@ import ProfilePage from "./pages/ProfilePage";
 import OverviewPage from "./pages/OverviewPage";
 import DisciplesPage from "./pages/DisciplesPage";
 import DiscipleProfilePage from "./pages/DiscipleProfilePage";
+import ConversationPage from "./pages/ConversationPage";
 import SuiviPage from "./pages/SuiviPage";
+import DiscussionsPage from "./pages/DiscussionsPage";
 import ConfigurationPage from "./pages/ConfigurationPage";
 import BotPage from "./pages/BotPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -60,10 +62,28 @@ function App() {
       />
 
       <Route
+        path="/disciples/:id/conversation"
+        element={
+          <ProtectedRoute>
+            <ConversationPage onLogout={logout} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/suivi"
         element={
           <ProtectedRoute>
             <SuiviPage onLogout={logout} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/discussions"
+        element={
+          <ProtectedRoute>
+            <DiscussionsPage onLogout={logout} />
           </ProtectedRoute>
         }
       />

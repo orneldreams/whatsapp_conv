@@ -1,16 +1,42 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, RotateCcw, Search, X } from "lucide-react";
 import api, { getErrorMessage } from "../api/client";
 import { useTheme } from "../context/ThemeContext";
 
+function normalizeFirstName(name) {
+  const text = String(name || "").trim();
+  return text ? text.split(/\s+/)[0] : "";
+}
+
+function applyTemplate(content, disciple, pastorName) {
+  const firstName = normalizeFirstName(disciple?.name);
+  const country = String(disciple?.currentCountry || disciple?.originCountry || "").trim();
+  const church = String(disciple?.church || "").trim();
+
+  return String(content || "")
+    .replace(/\[prénom\]/gi, firstName)
+    .replace(/\[prenom\]/gi, firstName)
+    .replace(/\[pays\]/gi, country)
+    .replace(/\[église\]/gi, church)
+    .replace(/\[eglise\]/gi, church)
+    .replace(/\[pasteur\]/gi, pastorName || "Pasteur");
+}
+
 function ManualCheckinModal({ isOpen, onClose, disciples = [], preselectedDiscipleId }) {
   const { theme } = useTheme();
+  const [recipientMode, setRecipientMode] = useState("all");
+  const [sendMode, setSendMode] = useState("structured");
   const [selectedIds, setSelectedIds] = useState([]);
-  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
   const [sending, setSending] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [toast, setToast] = useState("");
   const [error, setError] = useState("");
-  const dropdownRef = useRef(null);
+  const [success, setSuccess] = useState("");
+
+  const [defaultQuestions, setDefaultQuestions] = useState([]);
+  const [customQuestions, setCustomQuestions] = useState([]);
+  const [messageTemplate, setMessageTemplate] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingValue, setEditingValue] = useState("");
 
   const normalizedDisciples = useMemo(
     () =>
@@ -19,138 +45,202 @@ function ManualCheckinModal({ isOpen, onClose, disciples = [], preselectedDiscip
         return {
           ...disciple,
           id,
-          name: disciple.name || "Inconnu",
-          phone: disciple.phoneNumber || disciple.phone || id || ""
+          phone: disciple.displayPhone || disciple.phoneNumber || disciple.phone || id || ""
         };
       }),
     [disciples]
   );
 
-  const allIds = useMemo(() => normalizedDisciples.map((d) => d.id).filter(Boolean), [normalizedDisciples]);
-
-  const selectedDisciples = useMemo(
-    () => normalizedDisciples.filter((disciple) => selectedIds.includes(disciple.id)),
-    [normalizedDisciples, selectedIds]
-  );
-
   const silentIds = useMemo(() => {
-    const now = new Date();
+    const now = Date.now();
     return normalizedDisciples
       .filter((disciple) => {
         if (disciple.status === "Silencieux") return true;
         if (!disciple.lastContact) return true;
         const last = new Date(disciple.lastContact);
         if (Number.isNaN(last.getTime())) return false;
-        const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor((now - last.getTime()) / (1000 * 60 * 60 * 24));
         return diffDays >= 3;
       })
       .map((disciple) => disciple.id);
   }, [normalizedDisciples]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
+  const filteredManualList = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return normalizedDisciples;
+    return normalizedDisciples.filter((item) => {
+      const text = `${item.name || ""} ${item.phone || ""}`.toLowerCase();
+      return text.includes(query);
+    });
+  }, [normalizedDisciples, search]);
+
+  const selectedRecipients = useMemo(() => {
+    if (recipientMode === "all") {
+      return normalizedDisciples;
     }
+    if (recipientMode === "silent") {
+      return normalizedDisciples.filter((item) => silentIds.includes(item.id));
+    }
+    return normalizedDisciples.filter((item) => selectedIds.includes(item.id));
+  }, [recipientMode, normalizedDisciples, selectedIds, silentIds]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setError("");
+    setSuccess("");
+    setSearch("");
+    setEditingIndex(null);
+    setEditingValue("");
 
     if (preselectedDiscipleId) {
+      setRecipientMode("manual");
       setSelectedIds([preselectedDiscipleId]);
     } else {
+      setRecipientMode("all");
       setSelectedIds([]);
     }
-    setDropdownOpen(false);
-    setError("");
-    setToast("");
-  }, [preselectedDiscipleId, isOpen]);
+
+    api
+      .get("/api/bot/config")
+      .then((res) => {
+        const questions = Array.isArray(res.data?.checkinQuestions)
+          ? res.data.checkinQuestions.map((q) => String(q || "").trim()).filter(Boolean)
+          : [];
+
+        const safeQuestions = questions.length > 0
+          ? questions
+          : [
+              "Comment s'est passée ta journée ?",
+              "As-tu prié aujourd'hui ?",
+              "Un verset ou une pensée du jour ?"
+            ];
+
+        setDefaultQuestions(safeQuestions);
+        setCustomQuestions(safeQuestions);
+      })
+      .catch((err) => setError(getErrorMessage(err)));
+  }, [isOpen, preselectedDiscipleId]);
 
   useEffect(() => {
-    if (!dropdownOpen) {
-      return;
-    }
-
-    function onPointerDown(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
-  }, [dropdownOpen]);
-
-  useEffect(() => {
-    if (!toast) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => setToast(""), 2800);
+    if (!success) return;
+    const timer = window.setTimeout(() => setSuccess(""), 2600);
     return () => window.clearTimeout(timer);
-  }, [toast]);
+  }, [success]);
 
-  function getFirstName(name) {
-    if (!name) return "?";
-    return String(name).trim().split(/\s+/)[0] || "?";
+  if (!isOpen) return null;
+
+  function startEdit(index) {
+    setEditingIndex(index);
+    setEditingValue(customQuestions[index] || "");
   }
 
-  function toggleOne(id) {
+  function commitEdit() {
+    if (editingIndex === null) return;
+    const next = editingValue.trim();
+    if (!next) {
+      setError("Une question ne peut pas être vide.");
+      return;
+    }
+
+    setCustomQuestions((prev) => prev.map((item, idx) => (idx === editingIndex ? next : item)));
+    setEditingIndex(null);
+    setEditingValue("");
+  }
+
+  function removeQuestion(index) {
+    setCustomQuestions((prev) => prev.filter((_, idx) => idx !== index));
+  }
+
+  function addQuestion() {
+    const nextIndex = customQuestions.length;
+    setCustomQuestions((prev) => [...prev, "Nouvelle question"]);
+    setEditingIndex(nextIndex);
+    setEditingValue("Nouvelle question");
+  }
+
+  function resetQuestions() {
+    setCustomQuestions(defaultQuestions);
+    setEditingIndex(null);
+    setEditingValue("");
+  }
+
+  function toggleSelection(id) {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   }
 
-  function toggleAll() {
-    setSelectedIds((prev) => (prev.length === allIds.length ? [] : allIds));
+  function insertVariable(variable) {
+    setMessageTemplate((prev) => `${prev}${prev ? " " : ""}${variable}`);
   }
 
-  function selectSilentOnly() {
-    setSelectedIds(silentIds);
-  }
-
-  function removeSelected(id) {
-    setSelectedIds((prev) => prev.filter((item) => item !== id));
-  }
-
-  const sendDisabled = sending || selectedIds.length === 0 || !message.trim();
-
-  if (!isOpen) {
-    return null;
-  }
-
-  async function handleSend(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     setError("");
-    setToast("");
+    setSuccess("");
 
-    if (selectedIds.length === 0 || !message.trim()) {
-      setError("Selectionne au moins un disciple et saisis un message");
+    const targets = selectedRecipients;
+    if (targets.length === 0) {
+      setError("Aucun disciple sélectionné.");
       return;
     }
 
     setSending(true);
     try {
-      const payloadMessage = message.trim();
-      const results = await Promise.allSettled(
-        selectedIds.map((discipleId) =>
-          api.post("/api/checkins/send", {
-            discipleId,
-            message: payloadMessage
+      if (sendMode === "structured") {
+        const questions = customQuestions.map((q) => String(q || "").trim()).filter(Boolean);
+        if (questions.length === 0) {
+          setError("Ajoute au moins une question.");
+          setSending(false);
+          return;
+        }
+
+        const hasChanges = JSON.stringify(questions) !== JSON.stringify(defaultQuestions);
+        const results = await Promise.allSettled(
+          targets.map((disciple) =>
+            api.post(`/api/disciples/${encodeURIComponent(disciple.id)}/checkin/launch`, {
+              questions: hasChanges ? questions : undefined
+            })
+          )
+        );
+
+        const sentCount = results.filter((item) => item.status === "fulfilled").length;
+        const failedCount = results.length - sentCount;
+
+        if (sentCount > 0) {
+          setSuccess(`Message envoyé à ${sentCount} disciples ✓`);
+        }
+        if (failedCount > 0) {
+          setError(`${failedCount} envoi(s) ont échoué.`);
+        }
+      } else {
+        const template = messageTemplate.trim();
+        if (!template) {
+          setError("Saisis un message.");
+          setSending(false);
+          return;
+        }
+
+        const results = await Promise.allSettled(
+          targets.map((disciple) => {
+            const personalized = applyTemplate(template, disciple, "Pasteur");
+            return api.post(`/api/disciples/${encodeURIComponent(disciple.id)}/conversations`, {
+              content: personalized
+            });
           })
-        )
-      );
+        );
 
-      const sentCount = results.filter((result) => result.status === "fulfilled").length;
-      const failedCount = results.length - sentCount;
+        const sentCount = results.filter((item) => item.status === "fulfilled").length;
+        const failedCount = results.length - sentCount;
 
-      if (sentCount > 0) {
-        setToast(`Message envoye a ${sentCount} disciple${sentCount > 1 ? "s" : ""} ✓`);
-      }
-
-      if (failedCount > 0) {
-        setError(`${failedCount} envoi(s) ont echoue. Reessaie.`);
-      }
-
-      setMessage("");
-      if (failedCount === 0) {
-        setSelectedIds([]);
+        if (sentCount > 0) {
+          setSuccess(`Message envoyé à ${sentCount} disciples ✓`);
+          setMessageTemplate("");
+        }
+        if (failedCount > 0) {
+          setError(`${failedCount} envoi(s) ont échoué.`);
+        }
       }
     } catch (err) {
       setError(getErrorMessage(err));
@@ -159,6 +249,9 @@ function ManualCheckinModal({ isOpen, onClose, disciples = [], preselectedDiscip
     }
   }
 
+  const previewDisciple = selectedRecipients[0];
+  const preview = applyTemplate(messageTemplate, previewDisciple, "Pasteur");
+
   const panelStyle =
     theme === "dark"
       ? { backgroundColor: "#1A1825", borderColor: "#2D2A3E" }
@@ -166,170 +259,193 @@ function ManualCheckinModal({ isOpen, onClose, disciples = [], preselectedDiscip
 
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-      {toast ? (
-        <div className="pointer-events-none absolute right-4 top-4 z-50 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-4 py-2 text-sm font-medium text-emerald-300 shadow-lg">
-          {toast}
-        </div>
-      ) : null}
-
-      <div
-        className="w-full max-w-xl rounded-xl border p-5 shadow-xl"
-        style={panelStyle}
-      >
+      <div className="w-full max-w-4xl rounded-xl border p-5 shadow-xl" style={panelStyle}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-theme-text1">Check-in manuel</h3>
           <button
             className="rounded-md border border-theme-border px-3 py-1 text-sm text-theme-text2"
             onClick={onClose}
+            type="button"
           >
             Fermer
           </button>
         </div>
 
-        <form onSubmit={handleSend} className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-theme-text2">Disciples</label>
+        {success ? <p className="mb-3 text-sm text-emerald-500">{success}</p> : null}
+        {error ? <p className="mb-3 text-sm text-red-500">{error}</p> : null}
 
-            {selectedDisciples.length > 0 ? (
-              <div className="mb-2 flex flex-wrap gap-2">
-                {selectedDisciples.map((disciple) => (
-                  <span
-                    key={disciple.id}
-                    className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-theme-text1"
-                    style={panelStyle}
-                  >
-                    {getFirstName(disciple.name)}
-                    <button
-                      type="button"
-                      onClick={() => removeSelected(disciple.id)}
-                      className="text-theme-text2 hover:text-theme-text1"
-                      aria-label={`Retirer ${disciple.name}`}
-                    >
-                      ✕
-                    </button>
-                  </span>
-                ))}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <section className="space-y-2 rounded-lg border border-theme-border p-3">
+            <p className="text-sm font-semibold text-theme-text1">Sélection des destinataires</p>
+
+            <label className="flex items-center gap-2 text-sm text-theme-text1">
+              <input
+                type="radio"
+                checked={recipientMode === "all"}
+                onChange={() => setRecipientMode("all")}
+              />
+              Tous les disciples ({normalizedDisciples.length})
+            </label>
+
+            <label className="flex items-center gap-2 text-sm text-theme-text1">
+              <input
+                type="radio"
+                checked={recipientMode === "silent"}
+                onChange={() => setRecipientMode("silent")}
+              />
+              Silencieux uniquement ({silentIds.length})
+            </label>
+
+            <label className="flex items-center gap-2 text-sm text-theme-text1">
+              <input
+                type="radio"
+                checked={recipientMode === "manual"}
+                onChange={() => setRecipientMode("manual")}
+              />
+              Sélection manuelle
+            </label>
+
+            {recipientMode === "manual" ? (
+              <div className="rounded-lg border border-theme-border p-2">
+                <div className="relative mb-2">
+                  <Search size={14} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-theme-text2" />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    className="w-full rounded-md border border-theme-border bg-transparent py-1.5 pl-8 pr-2 text-sm text-theme-text1"
+                    placeholder="Rechercher un disciple"
+                  />
+                </div>
+
+                <div className="max-h-40 space-y-1 overflow-y-auto">
+                  {filteredManualList.map((disciple) => (
+                    <label key={disciple.id} className="flex items-center gap-2 text-sm text-theme-text1">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(disciple.id)}
+                        onChange={() => toggleSelection(disciple.id)}
+                      />
+                      <span>{disciple.name || "Inconnu"}</span>
+                      <span className="text-xs text-theme-text2">({disciple.phone})</span>
+                    </label>
+                  ))}
+                </div>
+
+                <p className="mt-2 text-xs text-theme-text2">{selectedIds.length} sélectionné(s)</p>
               </div>
             ) : null}
+          </section>
 
-            <div className="relative" ref={dropdownRef}>
-              <button
-                type="button"
-                onClick={() => setDropdownOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm text-theme-text1"
-                style={panelStyle}
-              >
-                <span>
-                  {selectedIds.length === 0
-                    ? "Selectionner un ou plusieurs disciples"
-                    : `${selectedIds.length} selectionne(s)`}
-                </span>
-                <span className="text-theme-text2">▾</span>
-              </button>
+          <section className="space-y-2 rounded-lg border border-theme-border p-3">
+            <p className="text-sm font-semibold text-theme-text1">Type d'envoi</p>
 
-              {dropdownOpen ? (
-                <div
-                  className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-lg border p-1 shadow-lg"
-                  style={panelStyle}
-                >
-                  <button
-                    type="button"
-                    onClick={toggleAll}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-theme-text1 hover:bg-black/5 dark:hover:bg-white/5"
-                  >
-                    <span
-                      className="inline-flex h-4 w-4 items-center justify-center rounded-[3px] border text-[10px]"
-                      style={{
-                        borderColor: "#2D2A3E",
-                        backgroundColor: selectedIds.length === allIds.length && allIds.length > 0 ? "#6C3FE8" : "transparent",
-                        color: "#FFFFFF"
-                      }}
-                    >
-                      {selectedIds.length === allIds.length && allIds.length > 0 ? "✓" : ""}
-                    </span>
-                    <span>Tous les disciples</span>
-                  </button>
+            <label className="flex items-center gap-2 text-sm text-theme-text1">
+              <input
+                type="radio"
+                checked={sendMode === "structured"}
+                onChange={() => setSendMode("structured")}
+              />
+              Check-in structuré
+            </label>
 
-                  <button
-                    type="button"
-                    onClick={selectSilentOnly}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-theme-text1 hover:bg-black/5 dark:hover:bg-white/5"
-                  >
-                    <span
-                      className="inline-flex h-4 w-4 items-center justify-center rounded-[3px] border text-[10px]"
-                      style={{
-                        borderColor: "#2D2A3E",
-                        backgroundColor:
-                          selectedIds.length > 0 && selectedIds.length === silentIds.length &&
-                          selectedIds.every((id) => silentIds.includes(id))
-                            ? "#6C3FE8"
-                            : "transparent",
-                        color: "#FFFFFF"
-                      }}
-                    >
-                      {selectedIds.length > 0 && selectedIds.length === silentIds.length &&
-                      selectedIds.every((id) => silentIds.includes(id))
-                        ? "✓"
-                        : ""}
-                    </span>
-                    <span>Silencieux uniquement</span>
-                  </button>
+            <label className="flex items-center gap-2 text-sm text-theme-text1">
+              <input
+                type="radio"
+                checked={sendMode === "message"}
+                onChange={() => setSendMode("message")}
+              />
+              Message libre personnalisé
+            </label>
 
-                  <div className="my-1 border-t border-theme-border" />
+            {sendMode === "structured" ? (
+              <div className="space-y-3 pt-1">
+                <p className="rounded-md border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  Ces modifications s'appliquent uniquement à cet envoi.
+                </p>
 
-                  {normalizedDisciples.map((disciple) => {
-                    const checked = selectedIds.includes(disciple.id);
-                    return (
+                {customQuestions.map((question, index) => (
+                  <div key={`${index}-${question}`} className="flex items-center gap-2 rounded-md border border-theme-border px-2 py-1.5">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#6C3FE8] text-xs text-white">{index + 1}</span>
+                    {editingIndex === index ? (
+                      <input
+                        autoFocus
+                        value={editingValue}
+                        onChange={(event) => setEditingValue(event.target.value)}
+                        onBlur={commitEdit}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            commitEdit();
+                          }
+                        }}
+                        className="flex-1 rounded-md border border-theme-border bg-transparent px-2 py-1 text-sm text-theme-text1"
+                      />
+                    ) : (
                       <button
-                        key={disciple.id}
                         type="button"
-                        onClick={() => toggleOne(disciple.id)}
-                        className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-theme-text1 hover:bg-black/5 dark:hover:bg-white/5"
+                        onClick={() => startEdit(index)}
+                        className="flex-1 text-left text-sm text-theme-text1"
                       >
-                        <span
-                          className="inline-flex h-4 w-4 items-center justify-center rounded-[3px] border text-[10px]"
-                          style={{
-                            borderColor: "#2D2A3E",
-                            backgroundColor: checked ? "#6C3FE8" : "transparent",
-                            color: "#FFFFFF"
-                          }}
-                        >
-                          {checked ? "✓" : ""}
-                        </span>
-                        <span className="flex-1">
-                          {disciple.name}
-                          <span className="ml-1 text-xs text-theme-text2">({disciple.phone})</span>
-                        </span>
+                        {question}
                       </button>
-                    );
-                  })}
+                    )}
+                    <button type="button" onClick={() => removeQuestion(index)} className="text-theme-text2">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={addQuestion} className="inline-flex items-center gap-1 rounded-md border border-theme-border px-2 py-1 text-xs text-theme-text1">
+                    <Plus size={12} /> Ajouter
+                  </button>
+                  <button type="button" onClick={resetQuestions} className="inline-flex items-center gap-1 rounded-md border border-theme-border px-2 py-1 text-xs text-theme-text1">
+                    <RotateCcw size={12} /> Réinitialiser
+                  </button>
                 </div>
-              ) : null}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-wrap gap-2">
+                  {["[prénom]", "[pays]", "[église]", "[pasteur]"].map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => insertVariable(item)}
+                      className="rounded-md border border-theme-border px-2 py-1 text-xs text-theme-text1"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
 
-            <p className="mt-2 text-xs text-theme-text2">{selectedIds.length} disciple(s) selectionne(s)</p>
-          </div>
+                <textarea
+                  value={messageTemplate}
+                  onChange={(event) => setMessageTemplate(event.target.value)}
+                  rows={4}
+                  className="w-full rounded-md border border-theme-border bg-transparent px-3 py-2 text-sm text-theme-text1"
+                  placeholder="Bonjour [prénom] 🙏 Je pense à toi aujourd'hui"
+                />
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-theme-text2">Message</label>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="h-28 w-full rounded-lg border border-theme-border bg-transparent px-3 py-2 text-sm text-theme-text1"
-              placeholder="Ecris un message pastoral..."
-            />
-          </div>
+                <p className="text-xs text-theme-text2">Chaque disciple recevra le message avec ses informations personnelles.</p>
 
-          {error ? <p className="text-sm text-red-500">{error}</p> : null}
+                <div className="rounded-md border border-theme-border px-3 py-2 text-sm text-theme-text1">
+                  Aperçu: {preview || "-"}
+                </div>
+              </div>
+            )}
+          </section>
 
           <button
-            disabled={sendDisabled}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             type="submit"
+            disabled={sending || selectedRecipients.length === 0}
+            className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             {sending
               ? "Envoi..."
-              : `Envoyer a ${selectedIds.length} disciple${selectedIds.length > 1 ? "s" : ""}`}
+              : sendMode === "structured"
+                ? `Lancer le check-in pour ${selectedRecipients.length} disciples`
+                : `Envoyer à ${selectedRecipients.length} disciples`}
           </button>
         </form>
       </div>

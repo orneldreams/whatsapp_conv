@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,12 +17,11 @@ const missingFirebaseEnv = Object.entries(firebaseConfig)
   .map(([key]) => key);
 
 if (missingFirebaseEnv.length > 0) {
-  throw new Error(
-    `Configuration Firebase frontend incomplète: ${missingFirebaseEnv.join(", ")}`
-  );
+  throw new Error("L'application ne peut pas démarrer pour le moment.");
 }
 
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
+export const storage = getStorage(app);

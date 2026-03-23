@@ -1,12 +1,13 @@
 const dayjs = require("dayjs");
 const { admin, db } = require("../services/firebase");
 const { sendWhatsAppMessage } = require("../services/twilio");
+const { sendWithTyping } = require("../utils/messaging");
 const config = require("../config");
 
 const defaultCheckinQuestions = [
-  "Comment s'est passee ta journee ?",
-  "As-tu prie aujourd'hui ? (oui/non)",
-  "Un verset ou une pensee du jour ?"
+  "Comment s'est passée ta journée ?",
+  "As-tu prié aujourd'hui ? (oui/non)",
+  "Un verset ou une pensée du jour ?"
 ];
 
 function normalizeBooleanAnswer(value) {
@@ -50,13 +51,46 @@ async function getCheckinQuestionsForUser(userRef) {
   return botConfig.checkinQuestions;
 }
 
+function normalizeQuestions(input) {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  return input.map((q) => String(q || "").trim()).filter(Boolean);
+}
+
+function updateAnswersArray(previousAnswers, index, value) {
+  const answers = Array.isArray(previousAnswers) ? [...previousAnswers] : [];
+  answers[index] = value;
+  return answers;
+}
+
+function shouldValidatePrayedAnswer(question, step) {
+  if (step !== 2) {
+    return false;
+  }
+
+  const text = String(question || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return text.includes("prie") || text.includes("priere");
+}
+
 async function handleCheckinResponse(userRef, userData, message) {
-  const checkinQuestions = await getCheckinQuestionsForUser(userRef);
   const checkinState = userData.activeCheckin;
 
   if (!checkinState || !checkinState.active || !checkinState.date) {
     return "Merci pour ton message. Je t'ecrirai a 20h pour ton check-in du jour.";
   }
+
+  const checkinQuestionsFromState = normalizeQuestions(checkinState.questions);
+  const checkinQuestions =
+    checkinQuestionsFromState.length > 0
+      ? checkinQuestionsFromState
+      : await getCheckinQuestionsForUser(userRef);
+
+  const safeQuestions = checkinQuestions.length > 0 ? checkinQuestions : defaultCheckinQuestions;
 
   const checkinDate = checkinState.date;
   const checkinDocRef = userRef.collection("checkins").doc(checkinDate);
@@ -64,77 +98,72 @@ async function handleCheckinResponse(userRef, userData, message) {
   const normalizedMessage = (message || "").trim();
 
   if (!normalizedMessage) {
-    return checkinQuestions[Math.max(0, currentStep - 1)] || defaultCheckinQuestions[Math.max(0, currentStep - 1)];
+    const sameQuestion = safeQuestions[Math.max(0, currentStep - 1)] || defaultCheckinQuestions[Math.max(0, currentStep - 1)];
+    return sameQuestion;
   }
 
+  const questionForStep = safeQuestions[Math.max(0, currentStep - 1)] || "";
+  if (shouldValidatePrayedAnswer(questionForStep, currentStep)) {
+    const prayedValue = normalizeBooleanAnswer(normalizedMessage);
+    if (prayedValue === null) {
+      return "Reponds seulement par oui ou non.";
+    }
+  }
+
+  const checkinSnap = await checkinDocRef.get();
+  const previousData = checkinSnap.exists ? checkinSnap.data() : {};
+  const answers = updateAnswersArray(previousData.answers, currentStep - 1, normalizedMessage);
+  const payload = {
+    answers,
+    questions: safeQuestions,
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+
   if (currentStep === 1) {
-    await checkinDocRef.set(
-      {
-        dayFeeling: normalizedMessage,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      },
-      { merge: true }
-    );
-
-    await userRef.set(
-      {
-        activeCheckin: {
-          active: true,
-          date: checkinDate,
-          step: 2
-        },
-        lastContact: admin.firestore.FieldValue.serverTimestamp()
-      },
-      { merge: true }
-    );
-
-    return checkinQuestions[1] || defaultCheckinQuestions[1];
+    payload.dayFeeling = normalizedMessage;
   }
 
   if (currentStep === 2) {
     const prayed = normalizeBooleanAnswer(normalizedMessage);
-
-    if (prayed === null) {
-      return "Reponds seulement par oui ou non: As-tu prie aujourd'hui ?";
+    if (prayed !== null) {
+      payload.prayed = prayed;
     }
+  }
 
-    await checkinDocRef.set(
-      {
-        prayed,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      },
-      { merge: true }
-    );
+  if (currentStep === 3) {
+    payload.verse = normalizedMessage;
+  }
+
+  await checkinDocRef.set(payload, { merge: true });
+
+  if (currentStep < safeQuestions.length) {
+    const nextStep = currentStep + 1;
+    const nextQuestion = safeQuestions[currentStep] || defaultCheckinQuestions[Math.min(defaultCheckinQuestions.length - 1, currentStep)];
 
     await userRef.set(
       {
         activeCheckin: {
           active: true,
           date: checkinDate,
-          step: 3
+          step: nextStep,
+          questions: checkinQuestionsFromState.length > 0 ? checkinQuestionsFromState : admin.firestore.FieldValue.delete()
         },
         lastContact: admin.firestore.FieldValue.serverTimestamp()
       },
       { merge: true }
     );
 
-    return checkinQuestions[2] || defaultCheckinQuestions[2];
+    return nextQuestion;
   }
-
-  await checkinDocRef.set(
-    {
-      verse: normalizedMessage,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    },
-    { merge: true }
-  );
 
   await userRef.set(
     {
       activeCheckin: {
         active: false,
         date: checkinDate,
-        step: 0
+        step: 0,
+        completedAt: admin.firestore.FieldValue.serverTimestamp(),
+        questions: admin.firestore.FieldValue.delete()
       },
       lastContact: admin.firestore.FieldValue.serverTimestamp()
     },
@@ -181,7 +210,9 @@ async function startDailyCheckinForAllUsers() {
         )
       );
 
-      tasks.push(sendWhatsAppMessage(phoneNumber, openingQuestion));
+      tasks.push(
+        sendWithTyping(userRef, phoneNumber, openingQuestion, "checkin")
+      );
     });
   }
 

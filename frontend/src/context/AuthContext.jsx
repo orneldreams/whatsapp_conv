@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   onAuthStateChanged,
@@ -57,7 +58,7 @@ export function AuthProvider({ children }) {
         } else {
           setProfile(baseProfile);
         }
-      } catch (_error) {
+      } catch {
         setProfile(baseProfile);
       } finally {
         setLoading(false);
@@ -81,7 +82,7 @@ export function AuthProvider({ children }) {
 
   async function saveProfile({ firstName, lastName, phone, country }) {
     if (!auth.currentUser) {
-      throw new Error("Utilisateur non connecte");
+      throw new Error("Ta session a expiré. Reconnecte-toi.");
     }
 
     const displayName = [firstName, lastName].filter(Boolean).join(" ").trim();
@@ -121,7 +122,7 @@ export function AuthProvider({ children }) {
 
   async function changePassword(nextPassword) {
     if (!auth.currentUser) {
-      throw new Error("Utilisateur non connecte");
+      throw new Error("Ta session a expiré. Reconnecte-toi.");
     }
 
     return updatePassword(auth.currentUser, nextPassword);
@@ -148,7 +149,7 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error("Une erreur est survenue. Recharge la page.");
   }
 
   return context;

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import dayjs from "dayjs";
 import {
   Bell,
   CalendarClock,
@@ -25,37 +26,27 @@ import StatCard from "../components/StatCard";
 import ManualCheckinModal from "../components/ManualCheckinModal";
 import { formatCountryWithFlag } from "../utils/countries";
 
-const avatarColors = [
-  { bg: "#4F46E5", text: "#fff" },
-  { bg: "#0F766E", text: "#fff" },
-  { bg: "#B45309", text: "#fff" },
-  { bg: "#BE185D", text: "#fff" },
-  { bg: "#7C3AED", text: "#fff" },
-  { bg: "#047857", text: "#fff" },
-  { bg: "#B91C1C", text: "#fff" },
-  { bg: "#1D4ED8", text: "#fff" }
-];
-
-function getInitials(name) {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
-function getAvatarColor(name) {
-  if (!name) return avatarColors[0];
-  const index = name.charCodeAt(0) % avatarColors.length;
-  return avatarColors[index];
-}
-
 function formatDateTime(value) {
   if (!value) return "-";
   return new Date(value).toLocaleString("fr-FR");
+}
+
+function formatShortDate(value) {
+  if (!value) return "";
+  return dayjs(value).isValid() ? dayjs(value).format("DD/MM") : String(value);
+}
+
+function formatShortTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function OverviewPage({ onLogout }) {
@@ -108,7 +99,7 @@ function OverviewPage({ onLogout }) {
 
       {!loading && !error && stats ? (
         <div className="space-y-6">
-          <section className="grid gap-4 lg:grid-cols-4">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard icon={<Users size={18} />} label="Total disciples" value={stats.totalDisciples} tone="primary" />
             <StatCard icon={<CircleCheckBig size={18} />} label="Actifs aujourd'hui" value={stats.activeToday} tone="success" />
             <StatCard icon={<TriangleAlert size={18} />} label="Silencieux +3j" value={stats.silentOver3Days} tone="warning" />
@@ -124,13 +115,13 @@ function OverviewPage({ onLogout }) {
             <article className="rounded-xl border border-theme-border bg-theme-surface p-4 shadow-card lg:col-span-2">
               <h3 className="mb-4 flex items-center gap-2 text-base font-semibold">
                 <ChartColumn size={18} className="text-[#6C3FE8]" />
-                Taux de reponse sur 7 jours
+                Taux de réponse sur 7 jours
               </h3>
-              <div className="h-72">
+              <div className="h-64 sm:h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.dailyResponseRate || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#4B556333" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} tickFormatter={(value) => formatShortDate(value)} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip
                       contentStyle={{
@@ -141,7 +132,7 @@ function OverviewPage({ onLogout }) {
                       }}
                       labelStyle={{ color: theme === "dark" ? "#F0EEFF" : "#1a1040", fontWeight: 600 }}
                       itemStyle={{ color: theme === "dark" ? "#F0EEFF" : "#1a1040" }}
-                      formatter={(value) => [`${value}%`, "Taux de reponse"]}
+                      formatter={(value) => [`${value}%`, "Taux de réponse"]}
                     />
                     <Bar dataKey="rate" fill="#6C3FE8" radius={[6, 6, 0, 0]} />
                   </BarChart>
@@ -161,9 +152,9 @@ function OverviewPage({ onLogout }) {
                   silentList.map((disciple) => (
                     <div key={disciple.discipleId} className="rounded-lg border border-theme-border p-3">
                       <p className="text-[14px] font-semibold">{disciple.name}</p>
-                      <p className="text-[12px] text-theme-muted">{disciple.phone}</p>
+                      <p className="text-[12px] text-theme-muted">{disciple.displayPhone || disciple.phone}</p>
                       <button
-                        className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-1 text-[12px] text-white"
+                        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-[12px] text-white sm:w-auto sm:justify-start sm:py-1"
                         onClick={() => {
                           setPreselectedDiscipleId(disciple.discipleId);
                           setShowModal(true);
@@ -182,25 +173,29 @@ function OverviewPage({ onLogout }) {
           <section className="rounded-xl border border-theme-border bg-theme-surface p-4 shadow-card">
             <h3 className="mb-4 flex items-center gap-2 text-base font-semibold">
               <Bell size={18} className="text-[#6C3FE8]" />
-              Dernieres reponses
+              Dernières réponses
             </h3>
             {recentResponses.length === 0 ? (
-              <p className="text-[14px] text-theme-muted">Aucune reponse recue aujourd'hui</p>
+              <p className="text-[14px] text-theme-muted">Aucune réponse reçue aujourd'hui</p>
             ) : (
               <div className="space-y-3">
                 {recentResponses.map((item, index) => (
-                  <div key={`${item.discipleId}-${index}`} className="flex items-center justify-between border-b border-theme-border pb-3">
-                    <div>
+                  <div key={`${item.discipleId}-${index}`} className="flex flex-col gap-3 border-b border-theme-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
                       <p className="text-[14px] font-semibold">{item.name}</p>
+                      <p className="text-[11px] text-theme-muted">Check-in du {formatShortDate(item.date)}</p>
+                      {item.responseAt ? (
+                        <p className="text-[11px] text-theme-muted">Réponse à {formatShortTime(item.responseAt)}</p>
+                      ) : null}
                       {item.currentCountry || item.country || item.originCountry ? (
                         <p className="text-[12px] text-theme-muted">
                           {formatCountryWithFlag(item.currentCountry || item.country || item.originCountry)}
                         </p>
                       ) : null}
-                      <p className="text-[13px] text-theme-muted">{item.excerpt}</p>
+                      <p className="break-words text-[13px] text-theme-muted">{item.excerpt}</p>
                     </div>
                     <span
-                      className={`rounded-full px-2 py-1 text-[12px] font-medium ${
+                      className={`inline-flex w-fit rounded-full px-2 py-1 text-[12px] font-medium ${
                         item.prayed === true
                           ? "bg-emerald-100 text-emerald-700"
                           : item.prayed === false
@@ -208,7 +203,7 @@ function OverviewPage({ onLogout }) {
                             : "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      {item.prayed === true ? "A prie" : item.prayed === false ? "N'a pas prie" : "-"}
+                      {item.prayed === true ? "A prié" : item.prayed === false ? "N'a pas prié" : "-"}
                     </span>
                   </div>
                 ))}

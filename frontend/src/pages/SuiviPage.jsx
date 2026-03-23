@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, MessageSquarePlus, Timer } from "lucide-react";
 import api, { getErrorMessage } from "../api/client";
 import Layout from "../components/Layout";
@@ -153,7 +153,7 @@ function SuiviPage({ onLogout }) {
     return rows;
   }, [history, selectedDiscipleId]);
 
-  async function fetchByDate(targetDate) {
+  const fetchByDate = useCallback(async (targetDate) => {
     setLoading(true);
     setError("");
 
@@ -174,11 +174,11 @@ function SuiviPage({ onLogout }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedDiscipleId]);
 
   useEffect(() => {
     fetchByDate(date);
-  }, [date]);
+  }, [date, fetchByDate]);
 
   async function loadHistory(discipleId) {
     setSelectedDiscipleId(discipleId);
@@ -328,11 +328,11 @@ function SuiviPage({ onLogout }) {
     <Layout title="Suivi" onLogout={onLogout}>
       <div className="flex min-h-[calc(100vh-8.5rem)] flex-col gap-4">
         <section className="rounded-xl border p-4" style={panelStyle}>
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div ref={datePickerRef} className="relative">
               <button
                 type="button"
-                className="inline-flex min-w-[220px] items-center justify-between rounded-lg border px-3 py-2 text-sm text-theme-text1"
+                className="inline-flex w-full min-w-0 items-center justify-between rounded-lg border px-3 py-2 text-sm text-theme-text1 sm:min-w-[220px]"
                 style={panelStyle}
                 onClick={() => {
                   const selected = parseDateKey(date);
@@ -428,7 +428,7 @@ function SuiviPage({ onLogout }) {
               ) : null}
             </div>
 
-            <div className="min-w-[260px] flex-1">
+            <div className="min-w-0 flex-1">
               <p className="mb-2 text-sm text-theme-text1">
                 {respondedCount} ont repondu / {items.length} total ({responseRate}%)
               </p>
@@ -448,9 +448,9 @@ function SuiviPage({ onLogout }) {
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
 
         <section className="grid min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border" style={panelStyle}>
-          <div className="grid min-h-0 flex-1 md:grid-cols-[40%_1px_60%]">
+          <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[40%_1px_60%]">
             <div className="min-h-0 overflow-hidden p-3">
-              <div className="h-full overflow-y-auto rounded-lg border" style={panelStyle}>
+              <div className="max-h-[420px] overflow-y-auto rounded-lg border xl:h-full xl:max-h-none" style={panelStyle}>
                 {loading ? <p className="p-4 text-sm text-theme-muted">Chargement...</p> : null}
 
                 {!loading && items.length === 0 ? (
@@ -464,10 +464,17 @@ function SuiviPage({ onLogout }) {
                       const avatar = getAvatarColor(item.name);
 
                       return (
-                        <button
+                        <div
                           key={item.discipleId}
-                          type="button"
+                          role="button"
+                          tabIndex={0}
                           onClick={() => loadHistory(item.discipleId)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              loadHistory(item.discipleId);
+                            }
+                          }}
                           className={`group relative flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-all duration-200 ${
                             selected
                               ? "suivi-selected-row bg-[#6C3FE8]/10"
@@ -488,7 +495,7 @@ function SuiviPage({ onLogout }) {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
                             <span
                               className={`rounded-full px-2 py-1 text-xs font-medium ${
                                 item.status === "repondu"
@@ -506,13 +513,13 @@ function SuiviPage({ onLogout }) {
                                 setSelectedDiscipleId(item.discipleId);
                                 setShowCheckinModal(true);
                               }}
-                              className="inline-flex items-center gap-1 rounded-[6px] bg-[#6C3FE8] px-[14px] py-[6px] text-[13px] font-medium text-white opacity-0 transition-all duration-200 group-hover:opacity-100 hover:bg-[#5a32d4]"
+                              className="inline-flex items-center gap-1 whitespace-nowrap rounded-[6px] bg-[#6C3FE8] px-[14px] py-[6px] text-[13px] font-medium text-white opacity-100 transition-all duration-200 hover:bg-[#5a32d4] sm:opacity-0 sm:group-hover:opacity-100"
                             >
                               <MessageSquarePlus size={14} />
                               Check-in
                             </button>
                           </div>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -520,12 +527,12 @@ function SuiviPage({ onLogout }) {
               </div>
             </div>
 
-            <div className="hidden md:block" style={{ backgroundColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }} />
+            <div className="hidden xl:block" style={{ backgroundColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD" }} />
 
             <div className="min-h-0 overflow-hidden p-3">
               <div
                 key={selectedDiscipleId || "empty"}
-                className="suivi-fade-in h-full overflow-y-auto rounded-lg border p-4"
+                className="suivi-fade-in min-h-[320px] overflow-y-auto rounded-lg border p-4 xl:h-full"
                 style={panelStyle}
               >
                 {!selectedItem ? (
@@ -534,7 +541,7 @@ function SuiviPage({ onLogout }) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <header className="flex items-center justify-between gap-3 border-b border-theme-border pb-3">
+                    <header className="flex flex-col gap-3 border-b border-theme-border pb-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-3">
                         <div
                           className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold"
@@ -599,7 +606,7 @@ function SuiviPage({ onLogout }) {
                         <button
                           type="button"
                           onClick={() => setShowCheckinModal(true)}
-                          className="inline-flex items-center gap-2 rounded-lg bg-[#6C3FE8] px-4 py-2 text-sm font-medium text-white"
+                          className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg bg-[#6C3FE8] px-4 py-2 text-sm font-medium text-white"
                         >
                           <Timer size={16} />
                           Envoyer un check-in maintenant

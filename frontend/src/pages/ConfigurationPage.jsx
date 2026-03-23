@@ -474,7 +474,7 @@ function ConfigurationPage({ onLogout }) {
     <Layout title="Configuration" onLogout={onLogout}>
       {error ? <p className="mb-3 text-sm text-red-500">{error}</p> : null}
 
-      <div className="grid min-h-[calc(100vh-8.5rem)] gap-4 xl:grid-cols-[1.05fr_0.95fr_1.2fr]">
+      <div className="grid gap-4 xl:min-h-[calc(100vh-8.5rem)] xl:grid-cols-[1.05fr_0.95fr_1.2fr]">
         <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border p-4" style={cardStyle}>
           <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-theme-text1">
             <Settings2 size={17} className="text-[#6C3FE8]" />

@@ -9,16 +9,12 @@ async function scheduleDailyCheckin() {
   await queue.add("daily-checkin", {
     triggeredAt: new Date().toISOString()
   });
-
-  console.log("[scheduler] Job daily-checkin ajoute");
 }
 
 async function scheduleWeeklySummary() {
   await queue.add("weekly-summary", {
     triggeredAt: new Date().toISOString()
   });
-
-  console.log("[scheduler] Job weekly-summary ajoute");
 }
 
 cron.schedule(dailyCron, () => {
@@ -32,5 +28,3 @@ cron.schedule(weeklyCron, () => {
     console.error("[scheduler] Erreur weekly-summary", error);
   });
 });
-
-console.log(`[scheduler] Lance - daily: ${dailyCron}, weekly: ${weeklyCron}`);

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const ThemeContext = createContext(null);
@@ -27,7 +28,7 @@ export function ThemeProvider({ children }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error("useTheme doit etre utilise dans ThemeProvider");
+    throw new Error("Une erreur d'affichage est survenue. Recharge la page.");
   }
   return context;
 }

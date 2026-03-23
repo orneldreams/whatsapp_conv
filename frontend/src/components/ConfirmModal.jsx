@@ -1,4 +1,8 @@
+import { useTheme } from "../context/ThemeContext";
+
 function ConfirmModal({ title, message, confirmLabel = "Confirmer", onConfirm, onCancel, danger = false }) {
+  const { theme } = useTheme();
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -7,7 +11,10 @@ function ConfirmModal({ title, message, confirmLabel = "Confirmer", onConfirm, o
     >
       <div
         className="w-full max-w-sm rounded-[14px] p-6"
-        style={{ background: "#1A1825", border: "0.5px solid #2D2A3E" }}
+        style={{
+          background: theme === "dark" ? "#1A1825" : "#FFFFFF",
+          border: theme === "dark" ? "0.5px solid #2D2A3E" : "0.5px solid #C4B5FD"
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {danger && (
@@ -16,16 +23,30 @@ function ConfirmModal({ title, message, confirmLabel = "Confirmer", onConfirm, o
           </div>
         )}
 
-        <h2 className="mb-2 text-center text-[16px] font-semibold text-theme-text1">{title}</h2>
+        <h2
+          className="mb-2 text-center text-[16px] font-semibold"
+          style={{ color: theme === "dark" ? "#F0EEFF" : "#1A1040" }}
+        >
+          {title}
+        </h2>
         {message && (
-          <p className="mb-6 text-center text-[13px] text-theme-text2">{message}</p>
+          <p
+            className="mb-6 text-center text-[13px]"
+            style={{ color: theme === "dark" ? "#F0EEFF" : "#1A1040" }}
+          >
+            {message}
+          </p>
         )}
 
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-lg border px-4 py-2 text-[13px] font-medium text-theme-text1 transition-colors hover:bg-white/5"
-            style={{ borderColor: "#2D2A3E", background: "transparent" }}
+            className="flex-1 rounded-lg border px-4 py-2 text-[13px] font-medium transition-colors"
+            style={{
+              background: theme === "dark" ? "transparent" : "#FFFFFF",
+              borderColor: theme === "dark" ? "#2D2A3E" : "#C4B5FD",
+              color: theme === "dark" ? "#9CA3AF" : "#6B7280"
+            }}
           >
             Annuler
           </button>

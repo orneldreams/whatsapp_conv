@@ -1,0 +1,14 @@
+{
+  "name": "whatsapp_conv-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npx --yes concurrently -n backend,frontend -c yellow,cyan \"npm run dev:backend:local\" \"npm run dev:frontend:local\"",
+    "dev:backend:local": "set PORT=3001&& npm --prefix backend run dev",
+    "dev:frontend:local": "set VITE_API_BASE_URL=http://localhost:3001&& npm --prefix frontend run dev -- --port 5175",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:clean": "npx --yes kill-port 3000 3001 5173 5174 5175",
+    "build": "npm --prefix frontend run build"
+  }
+}
