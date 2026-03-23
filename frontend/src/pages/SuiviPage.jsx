@@ -135,6 +135,11 @@ function SuiviPage({ onLogout }) {
     return Math.round((respondedCount / items.length) * 100);
   }, [respondedCount, items.length]);
 
+  const pendingItems = useMemo(
+    () => items.filter((item) => item.status !== "repondu"),
+    [items]
+  );
+
   const sevenDayRows = useMemo(() => {
     if (!selectedDiscipleId) return [];
     const map = new Map(history.map((entry) => [entry.id, entry]));
@@ -453,7 +458,52 @@ function SuiviPage({ onLogout }) {
 
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
 
-        <section className="grid min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border" style={panelStyle}>
+        <section className="rounded-xl border p-3 md:hidden" style={panelStyle}>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-theme-text1">Non-répondants du jour</p>
+            <span className="rounded-full bg-red-200 px-2 py-1 text-xs font-medium text-red-800">
+              {pendingItems.length}
+            </span>
+          </div>
+
+          {loading ? <p className="text-sm text-theme-muted">Chargement...</p> : null}
+
+          {!loading && pendingItems.length === 0 ? (
+            <p className="text-sm text-theme-muted">Tout le monde a répondu aujourd'hui.</p>
+          ) : null}
+
+          {!loading && pendingItems.length > 0 ? (
+            <div className="space-y-2">
+              {pendingItems.map((item) => (
+                <div key={`mobile-${item.discipleId}`} className="rounded-lg border border-theme-border p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-theme-text1">{item.name}</p>
+                      <p className="truncate text-xs text-theme-muted">{item.discipleId}</p>
+                    </div>
+                    <span className="rounded-full bg-red-200 px-2 py-1 text-[11px] font-medium text-red-800">
+                      Pas répondu
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDiscipleId(item.discipleId);
+                      setShowCheckinModal(true);
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#6C3FE8] px-3 py-2 text-sm font-medium text-white"
+                  >
+                    <MessageSquarePlus size={16} />
+                    Relancer ce disciple
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <section className="hidden min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border md:grid" style={panelStyle}>
           <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[40%_1px_60%]">
             <div className="min-h-0 overflow-hidden p-3">
               <div className="max-h-[420px] overflow-y-auto rounded-lg border xl:h-full xl:max-h-none" style={panelStyle}>
