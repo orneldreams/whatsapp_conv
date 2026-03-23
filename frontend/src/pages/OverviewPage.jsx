@@ -100,9 +100,9 @@ function OverviewPage({ onLogout }) {
       {!loading && !error && stats ? (
         <div className="space-y-6">
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard icon={<Users size={18} />} label="Total disciples" value={stats.totalDisciples} tone="primary" />
-            <StatCard icon={<CircleCheckBig size={18} />} label="Actifs aujourd'hui" value={stats.activeToday} tone="success" />
-            <StatCard icon={<TriangleAlert size={18} />} label="Silencieux +3j" value={stats.silentOver3Days} tone="warning" />
+            <StatCard icon={<Users size={18} />} label="Total disciples" value={stats.totalDisciples ?? 0} tone="primary" />
+            <StatCard icon={<CircleCheckBig size={18} />} label="Actifs aujourd'hui" value={stats.activeToday ?? 0} tone="success" />
+            <StatCard icon={<TriangleAlert size={18} />} label="Silencieux +3j" value={stats.silentOver3Days ?? 0} tone="warning" />
             <StatCard
               icon={<CalendarClock size={18} />}
               label="Prochain check-in"

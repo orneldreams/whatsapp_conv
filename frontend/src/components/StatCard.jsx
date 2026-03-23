@@ -6,6 +6,8 @@ function StatCard({ icon, label, value, tone = "primary" }) {
     danger: "bg-red-100 text-red-700"
   }[tone];
 
+  const displayValue = value === undefined || value === null || value === "" ? "-" : value;
+
   return (
     <article className="rounded-xl border border-theme-border bg-theme-surface p-4 shadow-card">
       <div className="flex items-center gap-3">
@@ -14,7 +16,7 @@ function StatCard({ icon, label, value, tone = "primary" }) {
         </div>
         <div>
           <p className="text-xs font-medium text-theme-text2">{label}</p>
-          <p className="text-2xl font-semibold text-theme-text1">{value}</p>
+          <p className="text-2xl font-semibold text-theme-text1">{displayValue}</p>
         </div>
       </div>
     </article>
