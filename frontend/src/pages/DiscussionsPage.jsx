@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, ArchiveRestore, ChevronLeft, MessageSquare, Pin, Search } from "lucide-react";
+import { Archive, ArchiveRestore, MessageSquare, Pin, Search } from "lucide-react";
 import { collection, onSnapshot } from "firebase/firestore";
 import api, { getErrorMessage } from "../api/client";
 import Layout from "../components/Layout";
@@ -85,7 +85,7 @@ function DiscussionsPage({ onLogout }) {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [selected, setSelected] = useState(null);
+  const [selectedConversation, setSelectedConversation] = useState(null);
   const [archivingId, setArchivingId] = useState("");
 
   const fetchDiscussions = useCallback(async () => {
@@ -133,11 +133,11 @@ function DiscussionsPage({ onLogout }) {
   }, [fetchDiscussions, user?.uid]);
 
   useEffect(() => {
-    if (!selected) {
+    if (!selectedConversation) {
       return;
     }
 
-    setSelected((prev) => {
+    setSelectedConversation((prev) => {
       if (!prev) {
         return prev;
       }
@@ -145,7 +145,7 @@ function DiscussionsPage({ onLogout }) {
       const next = discussions.find((item) => item.discipleId === prev.discipleId);
       return next || prev;
     });
-  }, [discussions, selected]);
+  }, [discussions, selectedConversation]);
 
   const totalUnread = useMemo(
     () => discussions.filter((item) => !item.archived).reduce((sum, item) => sum + (item.unreadCount || 0), 0),
@@ -179,21 +179,21 @@ function DiscussionsPage({ onLogout }) {
   }, [discussions, filter, search]);
 
   const selectedDisciple = useMemo(() => {
-    if (!selected) return null;
+    if (!selectedConversation) return null;
     return {
-      id: selected.discipleId,
-      discipleId: selected.discipleId,
-      phoneNumber: selected.phoneNumber,
-      displayPhone: selected.phoneNumber,
-      name: selected.name,
-      waitingForPastor: selected.waitingForPastor,
-      archived: selected.archived,
-      conversationPinned: selected.conversationPinned,
-      conversationPinnedAt: selected.conversationPinnedAt || null,
-      conversationPinnedUntil: selected.conversationPinnedUntil || null,
-      conversationNote: selected.conversationNote || ""
+      id: selectedConversation.discipleId,
+      discipleId: selectedConversation.discipleId,
+      phoneNumber: selectedConversation.phoneNumber,
+      displayPhone: selectedConversation.phoneNumber,
+      name: selectedConversation.name,
+      waitingForPastor: selectedConversation.waitingForPastor,
+      archived: selectedConversation.archived,
+      conversationPinned: selectedConversation.conversationPinned,
+      conversationPinnedAt: selectedConversation.conversationPinnedAt || null,
+      conversationPinnedUntil: selectedConversation.conversationPinnedUntil || null,
+      conversationNote: selectedConversation.conversationNote || ""
     };
-  }, [selected]);
+  }, [selectedConversation]);
 
   const handleMessagesRead = useCallback(({ discipleId }) => {
     if (!discipleId) {
@@ -215,7 +215,7 @@ function DiscussionsPage({ onLogout }) {
     setDiscussions((prev) => prev.map((item) => (
       item.discipleId === patch.id ? { ...item, ...patch } : item
     )));
-    setSelected((prev) => {
+    setSelectedConversation((prev) => {
       if (!prev || prev.discipleId !== patch.id) {
         return prev;
       }
@@ -240,8 +240,8 @@ function DiscussionsPage({ onLogout }) {
       await api.put(`/api/disciples/${encodeURIComponent(discussion.discipleId)}/archive`, {
         archived: nextArchived
       });
-      if (selected?.discipleId === discussion.discipleId && nextArchived && filter !== "archived") {
-        setSelected(null);
+      if (selectedConversation?.discipleId === discussion.discipleId && nextArchived && filter !== "archived") {
+        setSelectedConversation(null);
       }
     } catch (err) {
       setDiscussions((prev) => prev.map((item) => (
@@ -329,7 +329,7 @@ function DiscussionsPage({ onLogout }) {
 
   return (
     <Layout title="Discussions" onLogout={onLogout}>
-      <div className="flex min-h-[calc(100dvh-5rem)] flex-col overflow-hidden md:h-[calc(100dvh-64px)] md:flex-row">
+      <div className="flex h-[calc(100dvh-6rem)] flex-col overflow-hidden sm:h-[calc(100dvh-5rem)] md:h-[calc(100dvh-64px)] md:flex-row">
         <div
           className={`flex min-w-0 flex-col ${selectedDisciple ? "hidden md:flex md:w-[35%] md:min-w-[320px] md:flex-shrink-0 md:border-r" : "w-full md:w-[35%] md:min-w-[320px] md:flex-shrink-0 md:border-r"}`}
           style={sidePanelStyle}
@@ -405,7 +405,7 @@ function DiscussionsPage({ onLogout }) {
               </div>
             ) : (
               filtered.map((discussion) => {
-                const isSelected = selected?.discipleId === discussion.discipleId;
+                    const isSelected = selectedConversation?.discipleId === discussion.discipleId;
                 const color = getAvatarColor(discussion.name);
                 const pinnedConversation = isConversationPinnedActive(discussion);
 
@@ -425,7 +425,7 @@ function DiscussionsPage({ onLogout }) {
                     }}
                   >
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <button type="button" onClick={() => setSelected(discussion)} className="flex min-w-0 flex-1 items-start gap-3 text-left">
+                      <button type="button" onClick={() => setSelectedConversation(discussion)} className="flex min-w-0 flex-1 items-start gap-3 text-left">
                         <div
                           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-[13px] font-extrabold shadow-sm"
                           style={{ backgroundColor: color.bg, color: color.text }}
@@ -491,7 +491,7 @@ function DiscussionsPage({ onLogout }) {
         </div>
 
         <div
-          className={`relative min-w-0 flex-1 flex-col overflow-hidden ${selectedDisciple ? "flex min-h-[55dvh]" : "hidden md:flex"}`}
+          className={`${selectedDisciple ? "fixed inset-0 z-40 flex h-[100dvh] min-h-0 flex-col overflow-hidden md:relative md:inset-auto md:z-auto md:h-auto md:min-h-[55dvh]" : "hidden md:flex md:min-w-0 md:flex-1 md:flex-col md:overflow-hidden"}`}
           style={rightPaneStyle}
         >
           <div
@@ -503,26 +503,15 @@ function DiscussionsPage({ onLogout }) {
             style={{ background: isDark ? "rgba(251, 146, 60, 0.09)" : "rgba(234, 88, 12, 0.12)" }}
           />
           {selectedDisciple ? (
-            <>
-              <div className="border-b border-theme-border p-3 md:hidden">
-                <button
-                  type="button"
-                  onClick={() => setSelected(null)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-theme-border px-3 py-2 text-sm text-theme-text1"
-                >
-                  <ChevronLeft size={16} />
-                  Retour aux discussions
-                </button>
-              </div>
-              <ConversationPane
-                key={selectedDisciple.discipleId}
-                disciple={selectedDisciple}
-                className="h-full rounded-none border-0"
-                showHeader
-                onReadMessages={handleMessagesRead}
-                onDiscipleUpdate={handleDiscipleUpdate}
-              />
-            </>
+            <ConversationPane
+              key={selectedDisciple.discipleId}
+              disciple={selectedDisciple}
+              className="h-full rounded-none border-0"
+              showHeader
+              onBack={() => setSelectedConversation(null)}
+              onReadMessages={handleMessagesRead}
+              onDiscipleUpdate={handleDiscipleUpdate}
+            />
           ) : (
             <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 px-6 text-center text-theme-text2">
               <div className="rounded-3xl border p-8" style={emptyStateStyle}>

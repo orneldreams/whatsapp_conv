@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ChevronLeft,
   ChevronDown,
   CornerUpLeft,
   MessageSquare,
@@ -295,6 +296,7 @@ function ConversationPane({
   disciple,
   className = "",
   showHeader = true,
+  onBack,
   onReadMessages,
   onDiscipleUpdate
 }) {
@@ -1050,8 +1052,20 @@ function ConversationPane({
   return (
     <div className={`chat-container relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border ${className}`} style={frameStyle}>
       {showHeader ? (
-        <div className="flex flex-col gap-3 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4" style={headerStyle}>
-          <div className="min-w-0">
+        <div className="sticky top-0 z-10 flex flex-col gap-3 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4" style={headerStyle}>
+          <div className="flex min-w-0 items-center gap-2">
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1 md:hidden"
+                aria-label="Retour aux conversations"
+              >
+                <ChevronLeft size={16} />
+              </button>
+            ) : null}
+
+            <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-theme-text1">{disciple?.name || "Disciple"}</p>
               {disciple?.waitingForPastor ? (
@@ -1061,6 +1075,7 @@ function ConversationPane({
               ) : null}
             </div>
             <p className="truncate text-xs text-theme-text2">{disciple?.displayPhone || disciple?.phoneNumber || discipleId || ""}</p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <button
