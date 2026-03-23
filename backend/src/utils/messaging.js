@@ -94,6 +94,12 @@ async function sendWithTyping(userRef, phone, message, type, replyTo, mediaUrl =
 
   // 5. Envoyer via WhatsApp
   try {
+    console.log("[twilio-send] Envoi sortant", {
+      to: phone,
+      messageId: createdRef.id,
+      hasMedia: Array.isArray(mediaUrl) && mediaUrl.length > 0
+    });
+
     const twilioMessage = await sendWhatsAppMessage(phone, message, {
       statusCallback: buildStatusCallbackUrl(userRef, createdRef.id),
       mediaUrl
@@ -108,6 +114,15 @@ async function sendWithTyping(userRef, phone, message, type, replyTo, mediaUrl =
       { merge: true }
     );
   } catch (error) {
+    console.error("[twilio-send] Echec envoi sortant", {
+      to: phone,
+      messageId: createdRef.id,
+      message: error?.message || String(error),
+      code: error?.code || null,
+      status: error?.status || null,
+      moreInfo: error?.moreInfo || null
+    });
+
     await createdRef.set(
       {
         deliveryStatus: "failed",

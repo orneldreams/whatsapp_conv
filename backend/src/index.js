@@ -165,6 +165,10 @@ const handleTwilioWebhook = async (req, res) => {
     }
 
     if (!userRef) {
+      console.warn("[webhook] Numéro non routé", {
+        normalizedPhone,
+        pasteurCount: pasteurSnap.size
+      });
       return res.status(200).send("OK");
     }
 
@@ -324,4 +328,11 @@ app.post("/webhook/twilio/status", verifyTwilioSignature, handleTwilioStatusWebh
 app.post("/webhooks/twilio/whatsapp/status", verifyTwilioSignature, handleTwilioStatusWebhook);
 
 app.listen(config.port, () => {
+  console.log("[startup] Backend ready", {
+    nodeEnv: config.nodeEnv,
+    port: config.port,
+    twilioValidateSignature: config.twilio.validateSignature,
+    twilioWebhookUrl: config.twilio.webhookUrl || null,
+    twilioFromNumber: config.twilio.fromNumber || null
+  });
 });
