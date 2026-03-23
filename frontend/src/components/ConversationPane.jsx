@@ -1035,8 +1035,20 @@ function ConversationPane({
           borderColor: "#C8D8FF"
         };
 
+  const messagesZoneStyle = {
+    ...messagesPanelStyle,
+    WebkitOverflowScrolling: "touch"
+  };
+
+  const inputZoneStyle = {
+    ...composerWrapStyle,
+    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.5rem)",
+    bottom: 0,
+    zIndex: 5
+  };
+
   return (
-    <div className={`relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border ${className}`} style={frameStyle}>
+    <div className={`chat-container relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border ${className}`} style={frameStyle}>
       {showHeader ? (
         <div className="flex flex-col gap-3 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4" style={headerStyle}>
           <div className="min-w-0">
@@ -1196,7 +1208,7 @@ function ConversationPane({
         </div>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto px-2 py-3 sm:px-4" style={messagesPanelStyle}>
+      <div className="messages-zone flex-1 overflow-y-auto px-2 py-3 sm:px-4" style={messagesZoneStyle}>
         {hasMore ? (
           <div className="mb-3 flex justify-center">
             <button
@@ -1363,7 +1375,7 @@ function ConversationPane({
         )}
       </div>
 
-      <div className="border-t p-2 sm:p-3" style={composerWrapStyle}>
+      <div className="input-zone sticky border-t p-2 sm:p-3" style={inputZoneStyle}>
         {error ? <p className="mb-2 text-xs text-red-500">{error}</p> : null}
 
         {draftStorageKey && text.trim() ? (

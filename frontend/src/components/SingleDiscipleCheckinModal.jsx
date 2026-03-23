@@ -334,7 +334,7 @@ function SingleDiscipleCheckinModal({ isOpen, onClose, disciple, onReadMessages 
               </button>
             </form>
           ) : (
-            <div className="h-[60dvh] min-h-[420px] sm:h-[520px]">
+            <div className="chat-container h-[60dvh] min-h-[420px] overflow-hidden sm:h-[520px]">
               <ConversationPane
                 disciple={disciple}
                 showHeader={false}
