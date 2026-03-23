@@ -97,13 +97,6 @@ function verifyTwilioSignature(req, res, next) {
   );
 
   if (!isValid) {
-    console.error("[twilio-signature] Invalid signature", {
-      runtimeUrl,
-      candidateUrls,
-      from: String(req.body?.From || ""),
-      messageSid: String(req.body?.MessageSid || ""),
-      accountSid: String(req.body?.AccountSid || "")
-    });
     return res.status(403).send("Invalid Twilio signature");
   }
 
@@ -126,12 +119,6 @@ const handleTwilioWebhook = async (req, res) => {
   }
 
   try {
-    console.log("[webhook] Incoming WhatsApp", {
-      from: String(from || ""),
-      hasBody: Boolean(incomingBody),
-      messageSid: incomingMessageSid
-    });
-
     const normalizedPhone = ensureWhatsappIdentifier(from);
     const defaultPasteurId = null;
     let pasteurId = defaultPasteurId;
@@ -165,10 +152,6 @@ const handleTwilioWebhook = async (req, res) => {
     }
 
     if (!userRef) {
-      console.warn("[webhook] Numéro non routé", {
-        normalizedPhone,
-        pasteurCount: pasteurSnap.size
-      });
       return res.status(200).send("OK");
     }
 
@@ -328,11 +311,4 @@ app.post("/webhook/twilio/status", verifyTwilioSignature, handleTwilioStatusWebh
 app.post("/webhooks/twilio/whatsapp/status", verifyTwilioSignature, handleTwilioStatusWebhook);
 
 app.listen(config.port, () => {
-  console.log("[startup] Backend ready", {
-    nodeEnv: config.nodeEnv,
-    port: config.port,
-    twilioValidateSignature: config.twilio.validateSignature,
-    twilioWebhookUrl: config.twilio.webhookUrl || null,
-    twilioFromNumber: config.twilio.fromNumber || null
-  });
 });
