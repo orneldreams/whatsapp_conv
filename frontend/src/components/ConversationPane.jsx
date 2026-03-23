@@ -1052,59 +1052,61 @@ function ConversationPane({
   return (
     <div className={`chat-container relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border ${className}`} style={frameStyle}>
       {showHeader ? (
-        <div className="sticky top-0 z-10 flex flex-col gap-3 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4" style={headerStyle}>
-          <div className="flex min-w-0 items-center gap-2">
-            {onBack ? (
-              <button
-                type="button"
-                onClick={onBack}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1 md:hidden"
-                aria-label="Retour aux conversations"
-              >
-                <ChevronLeft size={16} />
-              </button>
-            ) : null}
-
-            <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-theme-text1">{disciple?.name || "Disciple"}</p>
-              {disciple?.waitingForPastor ? (
-                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
-                  En attente de réponse
-                </span>
+        <div className="sticky top-0 z-10 flex flex-col gap-2 border-b px-3 py-3 sm:gap-0 sm:px-4" style={headerStyle}>
+          {/* Ligne 1: Info du disciple + statut */}
+          <div className="flex min-w-0 items-start justify-between gap-3 sm:items-center">
+            <div className="flex min-w-0 items-center gap-2">
+              {onBack ? (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1 md:hidden"
+                  aria-label="Retour aux conversations"
+                >
+                  <ChevronLeft size={16} />
+                </button>
               ) : null}
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-theme-text1">{disciple?.name || "Disciple"}</p>
+                  {disciple?.waitingForPastor ? (
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                      En attente
+                    </span>
+                  ) : null}
+                </div>
+                <p className="truncate text-xs text-theme-text2">{disciple?.displayPhone || disciple?.phoneNumber || discipleId || ""}</p>
+              </div>
             </div>
-            <p className="truncate text-xs text-theme-text2">{disciple?.displayPhone || disciple?.phoneNumber || discipleId || ""}</p>
+
+            {/* Statut discret */}
+            <div className="relative shrink-0 group">
+              <span
+                className={`inline-flex h-2 w-2 rounded-full ${isOnline ? "bg-emerald-400" : "bg-slate-400"}`}
+                title={isOnline ? "En ligne" : "Hors ligne"}
+              />
+              <span className="absolute right-0 top-full mt-1 hidden rounded-md bg-theme-bg px-2 py-1 text-[10px] text-theme-text2 whitespace-nowrap group-hover:block">
+                {isOnline ? "En ligne" : "Hors ligne"}
+              </span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+
+          {/* Ligne 2: Boutons d'actions */}
+          <div className="flex flex-wrap items-center justify-end gap-1.5 sm:justify-end sm:gap-2">
             <button
               type="button"
               onClick={() => setSearchOpen((prev) => !prev)}
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1"
-              title="Rechercher dans la conversation"
+              title="Rechercher"
             >
               <Search size={15} />
             </button>
             <button
               type="button"
-              onClick={() => {
-                if (profileOpen) {
-                  setProfileOpen(false);
-                  return;
-                }
-                openProfilePanel();
-              }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1"
-              title="Voir les infos du disciple"
-            >
-              <UserRound size={15} />
-            </button>
-            <button
-              type="button"
               onClick={() => setNoteOpen((prev) => !prev)}
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1"
-              title="Note privée de conversation"
+              title="Note privée (sauvegardée auto)"
             >
               <StickyNote size={15} />
             </button>
@@ -1119,14 +1121,24 @@ function ConversationPane({
               }}
               disabled={pinningConversation}
               className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border border-theme-border ${conversationPinnedActive ? "text-amber-500" : "text-theme-text2"} hover:text-theme-text1 disabled:opacity-60`}
-              title={conversationPinnedActive ? "Retirer l'épinglage conversation" : "Épingler cette conversation avec durée"}
+              title={conversationPinnedActive ? "Retirer l'épinglage" : "Épingler"}
             >
               <Pin size={15} />
             </button>
-            <span className={`order-last inline-flex w-full items-center justify-center gap-1 rounded-full px-2 py-1 text-xs sm:order-none sm:w-auto ${isOnline ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-500/20 text-slate-400"}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? "bg-emerald-400" : "bg-slate-400"}`} />
-              {isOnline ? "En ligne" : "Hors ligne"}
-            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (profileOpen) {
+                  setProfileOpen(false);
+                  return;
+                }
+                openProfilePanel();
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-theme-border text-theme-text2 hover:text-theme-text1"
+              title="Voir le profil"
+            >
+              <UserRound size={15} />
+            </button>
           </div>
         </div>
       ) : null}
@@ -1164,16 +1176,21 @@ function ConversationPane({
 
       {noteOpen ? (
         <div className="border-b border-theme-border px-3 py-3 sm:px-4" style={headerStyle}>
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-theme-text2">Note privée</p>
-            {savingNote ? <span className="text-[11px] text-theme-text2">Sauvegarde...</span> : null}
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-theme-text2 mb-1">📝 Note privée</p>
+              <p className="text-[10px] text-theme-text2/70 italic">Visible par toi seulement. Sauvegarde auto.</p>
+            </div>
+            {savingNote ? (
+              <span className="shrink-0 text-[10px] text-amber-500 whitespace-nowrap">Sauvegarde...</span>
+            ) : null}
           </div>
           <textarea
             value={conversationNote}
             onChange={(event) => setConversationNote(event.target.value)}
             onBlur={handleSaveConversationNote}
             rows={3}
-            placeholder="Résumé pastoral, point à relancer, sujet sensible..."
+            placeholder="Résumé pastoral, point à relancer, sujet sensible, contexte personnel..."
             className="w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none"
             style={inputStyle}
           />
