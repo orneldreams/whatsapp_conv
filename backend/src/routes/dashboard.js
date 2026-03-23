@@ -626,6 +626,10 @@ router.post("/disciples/:id/conversations", async (req, res) => {
     const created = await createdRef.get();
     return res.status(201).json(serializeConversationDoc(created));
   } catch (error) {
+    console.error("[api-conversation-send] Erreur envoi pasteur", {
+      discipleId: String(req.params?.id || ""),
+      message: error?.message || String(error)
+    });
     return res.status(500).json({ error: error.message });
   }
 });

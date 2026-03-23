@@ -97,6 +97,13 @@ function verifyTwilioSignature(req, res, next) {
   );
 
   if (!isValid) {
+    console.error("[twilio-signature] Invalid signature", {
+      runtimeUrl,
+      candidateUrls,
+      from: String(req.body?.From || ""),
+      messageSid: String(req.body?.MessageSid || ""),
+      accountSid: String(req.body?.AccountSid || "")
+    });
     return res.status(403).send("Invalid Twilio signature");
   }
 
@@ -119,6 +126,12 @@ const handleTwilioWebhook = async (req, res) => {
   }
 
   try {
+    console.log("[webhook] Incoming WhatsApp", {
+      from: String(from || ""),
+      hasBody: Boolean(incomingBody),
+      messageSid: incomingMessageSid
+    });
+
     const normalizedPhone = ensureWhatsappIdentifier(from);
     const defaultPasteurId = null;
     let pasteurId = defaultPasteurId;
