@@ -31,7 +31,13 @@ async function firebaseAuth(req, res, next) {
       );
 
     return next();
-  } catch (_error) {
+  } catch (error) {
+    console.error("[firebaseAuth] verifyIdToken failed", {
+      message: error?.message,
+      code: error?.code,
+      authHeaderPresent: Boolean(req.headers.authorization),
+      origin: req.headers.origin || null
+    });
     return res.status(401).json({ error: "Token invalide" });
   }
 }
